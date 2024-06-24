@@ -81,7 +81,6 @@ contract Staking is Initializable {
             amount <= stakingToken.balanceOf(address(this)),
             "Insufficient staking tokens"
         );
-
         // Burn staking tokens
         stakingToken.burn(amount);
 
@@ -94,7 +93,7 @@ contract Staking is Initializable {
         }
 
         // Convert burned tokens to ETH (example: 1 staking token = 1 ETH)
-        uint256 ethReceived = amount; // Adjust this based on your conversion rate or mechanism
+        uint256 ethReceived = amount; // TODO Adjust this based on conversion rate
 
         // Send ETH to user
         payable(msg.sender).transfer(ethReceived);
