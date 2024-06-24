@@ -127,6 +127,10 @@ contract Staking is Initializable {
     function totalStakingTokens() external view returns (uint256) {
         return stakingToken.balanceOf(address(this));
     }
+
+    function getBalancePlayer(address _playerAddress) external view returns (uint256) {
+        return balances[_playerAddress];
+    }
 }
 
 interface IWETH is IERC20, IERC20Metadata {
