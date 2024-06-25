@@ -11,11 +11,11 @@ describe('Staking Contract', function () {
         stakingContract = await Staking.deploy();
         await stakingContract.deployed();
 
-        const amountToSend = ethers.utils.parseEther("10");
-        await deployer.sendTransaction({
-            to: stakingContract.address,
-            value: amountToSend
-        });
+        // const amountToSend = ethers.utils.parseEther("10");
+        // await deployer.sendTransaction({
+        //     to: stakingContract.address,
+        //     value: amountToSend
+        // });
 
         rewardToken = await ethers.getContractAt("IERC20", await stakingContract.rewardToken());
     });

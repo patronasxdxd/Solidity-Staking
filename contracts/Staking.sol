@@ -24,7 +24,6 @@ contract Staking is Initializable {
     uint256 public accumulatedRewardPerToken;
 
     uint256 public rewardRate;
-    address[] public stakers;
     uint256 public totalStaked;
 
     constructor() {
@@ -77,10 +76,6 @@ contract Staking is Initializable {
             stakingToken.mint(address(this), amount);
         }
 
-        if (stakes[msg.sender].amount == 0) {
-            stakers.push(msg.sender);
-        }
-
         totalStaked = totalStaked.add(amount);
         stakes[msg.sender].amount = stakes[msg.sender].amount.add(amount);
         console.log("amounted:", stakes[msg.sender].amount);
@@ -107,11 +102,6 @@ contract Staking is Initializable {
 
         // Update user's balance
         balances[msg.sender] = balances[msg.sender].sub(amount);
-
-        // Remove from stakers array if withdrawing all
-        if (balances[msg.sender] == 0) {
-            _removeFromStakers(msg.sender);
-        }
 
         // Convert burned tokens to ETH (example: 1 staking token = 1 ETH)
         uint256 ethReceived = amount; // TODO Adjust this based on conversion rate
@@ -195,17 +185,7 @@ contract Staking is Initializable {
         return rewards[_playerAddress];
     }
 
-    function _removeFromStakers(address _staker) internal {
-        for (uint256 i = 0; i < stakers.length; i++) {
-            if (stakers[i] == _staker) {
-                stakers[i] = stakers[stakers.length - 1];
-                stakers.pop();
-                break;
-            }
-        }
-    }
-
-    receive() external payable{}
+    receive() external payable {}
 }
 
 interface IWETH is IERC20 {
