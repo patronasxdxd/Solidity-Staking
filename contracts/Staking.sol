@@ -15,7 +15,6 @@ contract Staking is Initializable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-
     struct Stake {
         uint256 amount;
         uint256 rewardDebt; //todo
@@ -40,6 +39,10 @@ contract Staking is Initializable {
     uint256 public rewardRate;
     uint256 public totalStaked;
 
+    uint256 public earlyWithdrawalPenalty; // Penalty percentage for early withdrawals
+    uint256 public minStakeAmount; // Minimum amount to stake
+    uint256 public maxStakeAmount; // Maximum amount to stake
+
     mapping(address => Stake) public stakes;
     mapping(address => uint256) public balances;
 
@@ -50,17 +53,21 @@ contract Staking is Initializable {
     event Staked(address indexed user, uint256 amount);
     event Withdrawn(address indexed user, uint256 amount);
     event RewardPaid(address indexed user, uint256 reward);
+    event EmergencyWithdraw(address indexed user, uint256 amount);
 
     constructor() {
         _disableInitializers();
         owner = msg.sender;
         stakingToken = new StakingToken(0);
-        rewardToken = new RewardToken(1000000); 
+        rewardToken = new RewardToken(1000000);
         rewardRate = 100;
         accumulatedRewardPerToken = 0;
         lastUpdateTime = block.timestamp;
         stakeStarted = block.timestamp;
         timePeriod = 10000;
+        earlyWithdrawalPenalty = 10; // 10% penalty for early withdrawals
+        minStakeAmount = 0.5 * 10**18; // Minimum 0.5 token to stake
+        maxStakeAmount = 10000 * 10**18; // Maximum 10000 tokens to stake
     }
 
     // Modifier
@@ -74,6 +81,15 @@ contract Staking is Initializable {
         locked = false;
     }
 
+    // Modifier
+    /**
+     * @dev only owner
+     */
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Caller is not the owner");
+        _;
+    }
+
     /// @dev Allows the user to deposit ETH or ERC20 tokens
     /// @param token, null address to deposit ETH or a ERC20 address.
     /// @param amount to stake.
@@ -81,7 +97,9 @@ contract Staking is Initializable {
         address token,
         uint256 amount
     ) external payable noReentrant {
-        require(amount > 0, "Amount must be greater than 0");
+        require(amount >= minStakeAmount, "Amount must be greater than minimum stake amount");
+        require(amount <= maxStakeAmount, "Amount must be less than maximum stake amount");
+
 
         if (token == address(0)) {
             // Handle ETH
@@ -153,7 +171,6 @@ contract Staking is Initializable {
         }
     }
 
-    
     /// @dev Updates the rewards accumulated by an account since the last update.
     /// @param account The account address to update rewards for.
     function updateReward(address account) internal {
@@ -189,6 +206,28 @@ contract Staking is Initializable {
         }
     }
 
+
+    /// @dev Allows user to withdraw staked tokens in case of an emergency
+    function emergencyWithdraw() external noReentrant {
+         uint256 amount = stakes[msg.sender].amount;
+        uint256 penalty = amount.mul(earlyWithdrawalPenalty).div(100);
+        uint256 amountAfterPenalty = amount.sub(penalty);
+
+        // Burn staking tokens
+        stakingToken.burn(amount);
+
+        // Update user's balance
+        balances[msg.sender] = balances[msg.sender].sub(amount);
+
+        // Send the staked amount to user
+        IERC20(stakingToken).safeTransfer(msg.sender, amountAfterPenalty);
+
+        stakes[msg.sender].amount = 0;
+        totalStaked = totalStaked.sub(amount);
+
+        emit EmergencyWithdraw(msg.sender, amount);
+    }
+
     /// @dev Returns the balance of staking tokens held by an account.
     /// @param account The account address to check balance for.
     /// @return The balance of staking tokens.
@@ -222,12 +261,30 @@ contract Staking is Initializable {
         return balances[_playerAddress];
     }
 
-
     /// @dev Returns the accumulated rewards for a specific player.
     /// @param _playerAddress The player's address to check accumulated rewards for.
     /// @return The accumulated rewards of the player.
     function getReward(address _playerAddress) external view returns (uint256) {
         return rewards[_playerAddress];
+    }
+
+    /// @dev Sets a new early withdrawal penalty
+    /// @param _penalty New penalty percentage
+    function setEarlyWithdrawalPenalty(uint256 _penalty) external onlyOwner {
+        require(_penalty <= 100, "Penalty must be less than or equal to 100");
+        earlyWithdrawalPenalty = _penalty;
+    }
+
+    /// @dev Sets a new minimum stake amount
+    /// @param _minStakeAmount New minimum stake amount
+    function setMinStakeAmount(uint256 _minStakeAmount) external onlyOwner {
+        minStakeAmount = _minStakeAmount;
+    }
+
+    /// @dev Sets a new maximum stake amount
+    /// @param _maxStakeAmount New maximum stake amount
+    function setMaxStakeAmount(uint256 _maxStakeAmount) external onlyOwner {
+        maxStakeAmount = _maxStakeAmount;
     }
 
     receive() external payable {}
