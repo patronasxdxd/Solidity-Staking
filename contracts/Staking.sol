@@ -204,6 +204,8 @@ contract Staking is Initializable {
             }
         }
     }
+
+    receive() external payable{}
 }
 
 interface IWETH is IERC20 {
