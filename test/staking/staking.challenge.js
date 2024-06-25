@@ -53,18 +53,24 @@ describe('Staking Contract', function () {
         // Get the current block timestamp
         const currentBlock = await ethers.provider.getBlock('latest');
         const currentTime = currentBlock.timestamp;
-
-
-
+        
+        console.log("Current time before adjustment:", currentTime);
+        
         // Increase time by 5000 seconds
         const newTime = currentTime + 5000;
         await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
         await ethers.provider.send("evm_mine", []);
-
+        
+        // Fetch the updated current block timestamp
+        const currentBlockAfterMine = await ethers.provider.getBlock('latest');
+        const currentTimeAfterMine = currentBlockAfterMine.timestamp;
+        
+        console.log("Current time after adjustment:", currentTimeAfterMine);
+        
         
 
         // Perform the reward transaction
-        const tx = await stakingContract.claimReward();
+        const tx = await stakingContract.connect(player1).claimReward();
         await tx.wait();
 
         // Check ETH balance of player after reward distribution
@@ -79,8 +85,6 @@ describe('Staking Contract', function () {
 
 
         console.log(await stakingContract.lastUpdateTime())
-
-        console.log(await stakingContract.getReward(player1.address))
         console.log(await stakingContract.balanceOfRewardToken(player1.address))
 
 

@@ -20,7 +20,7 @@ contract Staking is Initializable {
 
     StakingToken public stakingToken;
     RewardToken public rewardToken;
-     uint256 public lastUpdateTime;
+    uint256 public lastUpdateTime;
     uint256 public accumulatedRewardPerToken;
 
     uint256 public rewardRate;
@@ -81,13 +81,10 @@ contract Staking is Initializable {
             stakers.push(msg.sender);
         }
 
-
-
         totalStaked = totalStaked.add(amount);
         stakes[msg.sender].amount = stakes[msg.sender].amount.add(amount);
+        console.log("amounted:",stakes[msg.sender].amount);
         updateReward(msg.sender);
-       
-
 
         emit Staked(msg.sender, amount);
     }
@@ -102,7 +99,6 @@ contract Staking is Initializable {
             amount <= stakingToken.balanceOf(address(this)),
             "Insufficient staking tokens"
         );
-
 
         updateReward(msg.sender);
 
@@ -129,26 +125,7 @@ contract Staking is Initializable {
         emit Withdrawn(msg.sender, amount);
     }
 
-    // function reward() external payable noReentrant {
-    //     uint256 totalBalance = stakingToken.balanceOf(address(this));
-    //     require(totalBalance > 0, "No staking tokens to distribute rewards");
-
-    //     uint256 ethReceived = msg.value;
-
-    //     for (uint256 i = 0; i < stakers.length; i++) {
-    //         address staker = stakers[i];
-    //         uint256 stakerBalance = balances[staker];
-    //         if (stakerBalance > 0) {
-    //             uint256 ethToSend = ethReceived.mul(stakerBalance).div(
-    //                 totalBalance
-    //             );
-    //             payable(staker).transfer(ethToSend);
-    //         }
-    //     }
-    // }
-
-
-      function claimReward() external noReentrant {
+    function claimReward() external noReentrant {
         updateReward(msg.sender);
         uint256 reward = rewards[msg.sender];
         console.log("final reward:", reward);
@@ -160,45 +137,57 @@ contract Staking is Initializable {
     }
 
     function updateReward(address account) internal {
-    uint256 elapsed = block.timestamp.sub(lastUpdateTime);
-    console.log("Elapsed time: ", elapsed);
+        uint256 elapsed = block.timestamp.sub(lastUpdateTime);
+        console.log("Elapsed time: ", elapsed);
 
-    console.log("total staked: ", totalStaked);
+        console.log("total staked: ", totalStaked);
 
-    uint256 rewardPerTokenIncrease = elapsed.mul(rewardRate).mul(1e18).div(totalStaked);
-    console.log("Reward per token increase: ", rewardPerTokenIncrease);
+        uint256 rewardPerTokenIncrease = elapsed.mul(rewardRate).mul(1e18).div(
+            totalStaked
+        );
+        console.log("Reward per token increase: ", rewardPerTokenIncrease);
 
-    accumulatedRewardPerToken = accumulatedRewardPerToken.add(rewardPerTokenIncrease);
-    console.log("Current rewards per token: ", accumulatedRewardPerToken);
+        accumulatedRewardPerToken = accumulatedRewardPerToken.add(
+            rewardPerTokenIncrease
+        );
+        console.log("Current rewards per token: ", accumulatedRewardPerToken);
 
-    lastUpdateTime = block.timestamp;
-    console.log("Updated last update time: ", lastUpdateTime);
+        lastUpdateTime = block.timestamp;
+        console.log("Updated last update time: ", lastUpdateTime);
 
-    if (account != address(0)) {
-        uint256 userStake = stakes[account].amount;
-        console.log("User stake: ", userStake);
+        if (account != address(0)) {
+            uint256 userStake = stakes[account].amount;
+            console.log("User stake: ", userStake);
 
-        uint256 userRewardsPerTokenPaid = userRewardPerTokenPaid[account];
-        console.log("User rewards per token paid: ", userRewardsPerTokenPaid);
+            uint256 userRewardsPerTokenPaid = userRewardPerTokenPaid[account];
+            console.log(
+                "User rewards per token paid: ",
+                userRewardsPerTokenPaid
+            );
 
-        uint256 rewardsPerTokenDifference = accumulatedRewardPerToken.sub(userRewardsPerTokenPaid);
-        console.log("Rewards per token difference: ", rewardsPerTokenDifference);
+            uint256 rewardsPerTokenDifference = accumulatedRewardPerToken.sub(
+                userRewardsPerTokenPaid
+            );
+            console.log(
+                "Rewards per token difference: ",
+                rewardsPerTokenDifference
+            );
 
-        uint256 userRewardsIncrease = userStake.mul(rewardsPerTokenDifference).div(1e18);
-        console.log("User rewards increase: ", userRewardsIncrease);
+            uint256 userRewardsIncrease = userStake
+                .mul(rewardsPerTokenDifference)
+                .div(1e18);
+            console.log("User rewards increase: ", userRewardsIncrease);
 
-        rewards[account] = rewards[account].add(userRewardsIncrease);
-        console.log("Current user rewards: ", rewards[account]);
+            rewards[account] = rewards[account].add(userRewardsIncrease);
+            console.log("Current user rewards: ", rewards[account]);
 
-        userRewardPerTokenPaid[account] = accumulatedRewardPerToken;
-        console.log("Updated accumulated rewards per token: ", accumulatedRewardPerToken);
+            userRewardPerTokenPaid[account] = accumulatedRewardPerToken;
+            console.log(
+                "Updated accumulated rewards per token: ",
+                accumulatedRewardPerToken
+            );
+        }
     }
-}
-
-
-
-
-
 
     function balanceOfStakingToken(
         address account
@@ -206,7 +195,7 @@ contract Staking is Initializable {
         return stakingToken.balanceOf(account);
     }
 
-     function balanceOfRewardToken(
+    function balanceOfRewardToken(
         address account
     ) external view returns (uint256) {
         return rewardToken.balanceOf(account);
@@ -222,9 +211,7 @@ contract Staking is Initializable {
         return balances[_playerAddress];
     }
 
-    function getReward(
-        address _playerAddress
-    ) external view returns (uint256){
+    function getReward(address _playerAddress) external view returns (uint256) {
         return rewards[_playerAddress];
     }
 
