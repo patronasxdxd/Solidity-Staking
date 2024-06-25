@@ -31,6 +31,18 @@ describe('Staking Contract', function () {
     it("Should have withdrawn correctly", async function () {
         const amount = ethers.utils.parseEther("1"); // 1 ETH
         await stakingContract.connect(player1).deposit("0x0000000000000000000000000000000000000000", amount, { value: amount });
+
+        // Get the current block timestamp
+        const currentBlock = await ethers.provider.getBlock('latest');
+        const currentTime = currentBlock.timestamp;
+
+        console.log("Current time before adjustment:", currentTime);
+
+        // Increase time by 5000 seconds
+        const newTime = currentTime + 10000;
+        await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
+        await ethers.provider.send("evm_mine", []);
+
         await stakingContract.connect(player1).withdraw(amount);
 
         const balance = await stakingContract.getBalancePlayer(player1.address);

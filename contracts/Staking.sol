@@ -15,32 +15,58 @@ contract Staking is Initializable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
+
+    struct Stake {
+        uint256 amount;
+        uint256 rewardDebt; //todo
+    }
+
+    // boolean to preven reentrancy
     bool internal locked;
+
+    // Contract owner
     address public owner;
 
+    // ERC20 contract address
     StakingToken public stakingToken;
     RewardToken public rewardToken;
+
     uint256 public lastUpdateTime;
+    uint256 public timePeriod;
+    uint256 public stakeStarted;
+
     uint256 public accumulatedRewardPerToken;
 
     uint256 public rewardRate;
     uint256 public totalStaked;
 
+    mapping(address => Stake) public stakes;
+    mapping(address => uint256) public balances;
+
+    mapping(address => uint256) public userRewardPerTokenPaid;
+    mapping(address => uint256) public rewards;
+
+    // Events
+    event Staked(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+    event RewardPaid(address indexed user, uint256 reward);
+
     constructor() {
         _disableInitializers();
         owner = msg.sender;
         stakingToken = new StakingToken(0);
-        rewardToken = new RewardToken(1000000); //reward token
+        rewardToken = new RewardToken(1000000); 
         rewardRate = 100;
         accumulatedRewardPerToken = 0;
         lastUpdateTime = block.timestamp;
+        stakeStarted = block.timestamp;
+        timePeriod = 10000;
     }
 
-    struct Stake {
-        uint256 amount;
-        uint256 rewardDebt;
-    }
-
+    // Modifier
+    /**
+     * @dev Prevents reentrancy
+     */
     modifier noReentrant() {
         require(!locked, "No re-entrancy");
         locked = true;
@@ -48,16 +74,9 @@ contract Staking is Initializable {
         locked = false;
     }
 
-    mapping(address => Stake) public stakes;
-    mapping(address => uint256) public balances;
-
-    event Staked(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, uint256 amount);
-    event RewardPaid(address indexed user, uint256 reward);
-    mapping(address => uint256) public userRewardPerTokenPaid;
-    mapping(address => uint256) public rewards;
-
-    // Deposit ETH or ERC20 tokens
+    /// @dev Allows the user to deposit ETH or ERC20 tokens
+    /// @param token, null address to deposit ETH or a ERC20 address.
+    /// @param amount to stake.
     function deposit(
         address token,
         uint256 amount
@@ -84,6 +103,8 @@ contract Staking is Initializable {
         emit Staked(msg.sender, amount);
     }
 
+    /// @dev Allows user to unstake tokens after the correct time period has elapsed
+    /// @param amount - the amount to unlock (in wei)
     function withdraw(uint256 amount) external noReentrant {
         require(
             amount <= balances[msg.sender],
@@ -93,6 +114,11 @@ contract Staking is Initializable {
         require(
             amount <= stakingToken.balanceOf(address(this)),
             "Insufficient staking tokens"
+        );
+
+        require(
+            block.timestamp.sub(stakeStarted) > timePeriod,
+            "Tokens are only available after correct time period"
         );
 
         updateReward(msg.sender);
@@ -115,6 +141,7 @@ contract Staking is Initializable {
         emit Withdrawn(msg.sender, amount);
     }
 
+    /// @dev Allows user to claim reward tokens depending on their staked amount and duration of the stake.
     function claimReward() external noReentrant {
         updateReward(msg.sender);
         uint256 reward = rewards[msg.sender];
@@ -126,6 +153,9 @@ contract Staking is Initializable {
         }
     }
 
+    
+    /// @dev Updates the rewards accumulated by an account since the last update.
+    /// @param account The account address to update rewards for.
     function updateReward(address account) internal {
         uint256 elapsed = block.timestamp.sub(lastUpdateTime);
         console.log("Elapsed time: ", elapsed);
@@ -159,28 +189,43 @@ contract Staking is Initializable {
         }
     }
 
+    /// @dev Returns the balance of staking tokens held by an account.
+    /// @param account The account address to check balance for.
+    /// @return The balance of staking tokens.
     function balanceOfStakingToken(
         address account
     ) external view returns (uint256) {
         return stakingToken.balanceOf(account);
     }
 
+    /// @dev Returns the balance of reward tokens held by an account.
+    /// @param account The account address to check balance for.
+    /// @return The balance of reward tokens.
     function balanceOfRewardToken(
         address account
     ) external view returns (uint256) {
         return rewardToken.balanceOf(account);
     }
 
+    /// @dev Returns the total amount of staking tokens held by the staking contract.
+    /// @return The total balance of staking tokens.
     function totalStakingTokens() external view returns (uint256) {
         return stakingToken.balanceOf(address(this));
     }
 
+    /// @dev Returns the staked balance of a specific player.
+    /// @param _playerAddress The player's address to check staked balance for.
+    /// @return The staked balance of the player.
     function getBalancePlayer(
         address _playerAddress
     ) external view returns (uint256) {
         return balances[_playerAddress];
     }
 
+
+    /// @dev Returns the accumulated rewards for a specific player.
+    /// @param _playerAddress The player's address to check accumulated rewards for.
+    /// @return The accumulated rewards of the player.
     function getReward(address _playerAddress) external view returns (uint256) {
         return rewards[_playerAddress];
     }
