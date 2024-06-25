@@ -83,7 +83,7 @@ contract Staking is Initializable {
 
         totalStaked = totalStaked.add(amount);
         stakes[msg.sender].amount = stakes[msg.sender].amount.add(amount);
-        console.log("amounted:",stakes[msg.sender].amount);
+        console.log("amounted:", stakes[msg.sender].amount);
         updateReward(msg.sender);
 
         emit Staked(msg.sender, amount);
@@ -140,52 +140,32 @@ contract Staking is Initializable {
         uint256 elapsed = block.timestamp.sub(lastUpdateTime);
         console.log("Elapsed time: ", elapsed);
 
-        console.log("total staked: ", totalStaked);
-
         uint256 rewardPerTokenIncrease = elapsed.mul(rewardRate).mul(1e18).div(
             totalStaked
         );
-        console.log("Reward per token increase: ", rewardPerTokenIncrease);
 
         accumulatedRewardPerToken = accumulatedRewardPerToken.add(
             rewardPerTokenIncrease
         );
-        console.log("Current rewards per token: ", accumulatedRewardPerToken);
 
         lastUpdateTime = block.timestamp;
-        console.log("Updated last update time: ", lastUpdateTime);
 
         if (account != address(0)) {
             uint256 userStake = stakes[account].amount;
-            console.log("User stake: ", userStake);
 
             uint256 userRewardsPerTokenPaid = userRewardPerTokenPaid[account];
-            console.log(
-                "User rewards per token paid: ",
-                userRewardsPerTokenPaid
-            );
 
             uint256 rewardsPerTokenDifference = accumulatedRewardPerToken.sub(
                 userRewardsPerTokenPaid
-            );
-            console.log(
-                "Rewards per token difference: ",
-                rewardsPerTokenDifference
             );
 
             uint256 userRewardsIncrease = userStake
                 .mul(rewardsPerTokenDifference)
                 .div(1e18);
-            console.log("User rewards increase: ", userRewardsIncrease);
 
             rewards[account] = rewards[account].add(userRewardsIncrease);
-            console.log("Current user rewards: ", rewards[account]);
 
             userRewardPerTokenPaid[account] = accumulatedRewardPerToken;
-            console.log(
-                "Updated accumulated rewards per token: ",
-                accumulatedRewardPerToken
-            );
         }
     }
 

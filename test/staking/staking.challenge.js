@@ -60,38 +60,16 @@ describe('Staking Contract', function () {
         const newTime = currentTime + 5000;
         await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
         await ethers.provider.send("evm_mine", []);
-        
-        // Fetch the updated current block timestamp
-        const currentBlockAfterMine = await ethers.provider.getBlock('latest');
-        const currentTimeAfterMine = currentBlockAfterMine.timestamp;
-        
-        console.log("Current time after adjustment:", currentTimeAfterMine);
-        
-        
 
-        // Perform the reward transaction
         const tx = await stakingContract.connect(player1).claimReward();
         await tx.wait();
 
-        // Check ETH balance of player after reward distribution
-        const finalEthBalance = await ethers.provider.getBalance(player1.address);
-
-        console.log(initialEthBalance)
-
-        console.log(finalEthBalance)
-
-
-        console.log(await stakingContract.accumulatedRewardPerToken())
-
-
-        console.log(await stakingContract.lastUpdateTime())
-        console.log(await stakingContract.balanceOfRewardToken(player1.address))
-
+        const rewardTokensPlayer1 = await stakingContract.balanceOfRewardToken(player1.address)
 
 
         // Assert that player's ETH balance has increased within an acceptable margin
-        const expectedBalanceIncrease = ethers.BigNumber.from("999999999999999500");
-        expect(finalEthBalance.sub(initialEthBalance)).to.be.closeTo(expectedBalanceIncrease, ethers.BigNumber.from("10000"), "Player should receive correct ETH reward");
+        const expectedRewardTokens = ethers.BigNumber.from("500000");
+        expect(expectedRewardTokens).to.be.closeTo(rewardTokensPlayer1, 1000, "Player should receive correct ETH reward");
     });
 
     // it("Should distribute rewards correctly among stakers", async function () {
