@@ -11,7 +11,7 @@ describe('Staking Contract', function () {
         stakingContract = await Staking.deploy();
         await stakingContract.deployed();
 
-       const amountToSend = ethers.utils.parseEther("10");
+        const amountToSend = ethers.utils.parseEther("10");
         await deployer.sendTransaction({
             to: stakingContract.address,
             value: amountToSend
@@ -45,9 +45,9 @@ describe('Staking Contract', function () {
         // Get the current block timestamp
         const currentBlock = await ethers.provider.getBlock('latest');
         const currentTime = currentBlock.timestamp;
-        
+
         console.log("Current time before adjustment:", currentTime);
-        
+
         // Increase time by 5000 seconds
         const newTime = currentTime + 5000;
         await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
@@ -79,17 +79,14 @@ describe('Staking Contract', function () {
         // Get the current block timestamp
         const currentBlock = await ethers.provider.getBlock('latest');
         const currentTime = currentBlock.timestamp;
-        
+
         console.log("Current time before adjustment:", currentTime);
-        
+
         // Increase time by 5000 seconds
         const newTime = currentTime + 5000;
         await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
         await ethers.provider.send("evm_mine", []);
 
-
- 
-        // Claim rewards for each player
         await stakingContract.connect(player1).claimReward();
         await stakingContract.connect(player2).claimReward();
         await stakingContract.connect(player3).claimReward();
@@ -107,26 +104,6 @@ describe('Staking Contract', function () {
         console.log(rewardTokensPlayer3)
         console.log(rewardTokensPlayer4)
 
-
-
-        // // Calculate expected rewards
-        // const totalStaked = amountPlayer1.add(amountPlayer2).add(amountPlayer3).add(amountPlayer4);
-        // const rewardPerToken = rewardAmount.div(totalStaked);
-        // const rewardPlayer1 = rewardPerToken.mul(amountPlayer1);
-        // const rewardPlayer2 = rewardPerToken.mul(amountPlayer2);
-        // const rewardPlayer3 = rewardPerToken.mul(amountPlayer3);
-        // const rewardPlayer4 = rewardPerToken.mul(amountPlayer4);
-
-        // console.log(rewardPlayer1)
-        // console.log(rewardPlayer2)
-        // console.log(rewardPlayer3)
-        // console.log(rewardPlayer4)
-
-        // // Assert that each player's reward is as expected
-        // // expect(finalEthBalancePlayer1.sub(initialEthBalancePlayer1)).to.be.closeTo(rewardPlayer1, ethers.BigNumber.from("10000"), "Player 1 should receive correct ETH reward");
-        // // expect(finalEthBalancePlayer2.sub(initialEthBalancePlayer2)).to.be.closeTo(rewardPlayer2, ethers.BigNumber.from("10000"), "Player 2 should receive correct ETH reward");
-        // // expect(finalEthBalancePlayer3.sub(initialEthBalancePlayer3)).to.be.closeTo(rewardPlayer3, ethers.BigNumber.from("10000"), "Player 3 should receive correct ETH reward");
-        // // expect(finalEthBalancePlayer4.sub(initialEthBalancePlayer4)).to.be.closeTo(rewardPlayer4, ethers.BigNumber.from("10000"), "Player 4 should receive correct ETH reward");
     });
 
 });
