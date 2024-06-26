@@ -100,6 +100,8 @@ contract Staking is Initializable {
         require(amount >= minStakeAmount, "Amount must be greater than minimum stake amount");
         require(amount <= maxStakeAmount, "Amount must be less than maximum stake amount");
 
+        updateReward(msg.sender);
+
 
         if (token == address(0)) {
             // Handle ETH
@@ -116,8 +118,7 @@ contract Staking is Initializable {
         totalStaked = totalStaked.add(amount);
         stakes[msg.sender].amount = stakes[msg.sender].amount.add(amount);
         console.log("amounted:", stakes[msg.sender].amount);
-        updateReward(msg.sender);
-
+        
         emit Staked(msg.sender, amount);
     }
 
@@ -172,18 +173,15 @@ contract Staking is Initializable {
     }
 
     /// @dev Updates the rewards accumulated by an account since the last update.
-    /// @param account The account address to update rewards for.
-    function updateReward(address account) internal {
+/// @param account The account address to update rewards for.
+function updateReward(address account) internal {
+    if (totalStaked > 0) {
         uint256 elapsed = block.timestamp.sub(lastUpdateTime);
         console.log("Elapsed time: ", elapsed);
 
-        uint256 rewardPerTokenIncrease = elapsed.mul(rewardRate).mul(1e18).div(
-            totalStaked
-        );
+        uint256 rewardPerTokenIncrease = elapsed.mul(rewardRate).mul(1e18).div(totalStaked);
 
-        accumulatedRewardPerToken = accumulatedRewardPerToken.add(
-            rewardPerTokenIncrease
-        );
+        accumulatedRewardPerToken = accumulatedRewardPerToken.add(rewardPerTokenIncrease);
 
         lastUpdateTime = block.timestamp;
 
@@ -192,19 +190,18 @@ contract Staking is Initializable {
 
             uint256 userRewardsPerTokenPaid = userRewardPerTokenPaid[account];
 
-            uint256 rewardsPerTokenDifference = accumulatedRewardPerToken.sub(
-                userRewardsPerTokenPaid
-            );
+            uint256 rewardsPerTokenDifference = accumulatedRewardPerToken.sub(userRewardsPerTokenPaid);
 
-            uint256 userRewardsIncrease = userStake
-                .mul(rewardsPerTokenDifference)
-                .div(1e18);
+            uint256 userRewardsIncrease = userStake.mul(rewardsPerTokenDifference).div(1e18);
 
             rewards[account] = rewards[account].add(userRewardsIncrease);
 
             userRewardPerTokenPaid[account] = accumulatedRewardPerToken;
         }
+    } else {
+        lastUpdateTime = block.timestamp;
     }
+}
 
 
     /// @dev Allows user to withdraw staked tokens in case of an emergency
