@@ -28,7 +28,7 @@ describe('Staking Contract', function () {
 
     it("Should have deposited correctly", async function () {
         const amount = ethers.utils.parseEther("1"); // 1 ETH
-        await stakingContract.connect(player1).deposit("0x0000000000000000000000000000000000000000", amount, { value: amount });
+        await stakingContract.connect(player1).deposit( amount, { value: amount });
 
         const balance = await stakingContract.getBalancePlayer(player1.address);
         expect(balance).to.equal(amount, "Player should have staked the correct amount");
@@ -36,7 +36,7 @@ describe('Staking Contract', function () {
 
     it("Should have withdrawn correctly", async function () {
         const amount = ethers.utils.parseEther("1"); // 1 ETH
-        await stakingContract.connect(player1).deposit("0x0000000000000000000000000000000000000000", amount, { value: amount });
+        await stakingContract.connect(player1).deposit( amount, { value: amount });
 
         // Get the current block timestamp
         const currentBlock = await ethers.provider.getBlock('latest');
@@ -58,7 +58,7 @@ describe('Staking Contract', function () {
     it("Should distribute rewards correctly in ETH", async function () {
 
         const initialStakeAmount = ethers.utils.parseEther("2"); // 2 ETH
-        await stakingContract.connect(player1).deposit("0x0000000000000000000000000000000000000000", initialStakeAmount, { value: initialStakeAmount });
+        await stakingContract.connect(player1).deposit(initialStakeAmount, { value: initialStakeAmount });
 
         // Get the current block timestamp
         const currentBlock = await ethers.provider.getBlock('latest');
@@ -89,10 +89,10 @@ describe('Staking Contract', function () {
         const amountPlayer3 = ethers.utils.parseEther("2");   // 2 ETH
         const amountPlayer4 = ethers.utils.parseEther("0.5"); // 0.5 ETH
 
-        await stakingContract.connect(player1).deposit("0x0000000000000000000000000000000000000000", amountPlayer1, { value: amountPlayer1 });
-        await stakingContract.connect(player2).deposit("0x0000000000000000000000000000000000000000", amountPlayer2, { value: amountPlayer2 });
-        await stakingContract.connect(player3).deposit("0x0000000000000000000000000000000000000000", amountPlayer3, { value: amountPlayer3 });
-        await stakingContract.connect(player4).deposit("0x0000000000000000000000000000000000000000", amountPlayer4, { value: amountPlayer4 });
+        await stakingContract.connect(player1).deposit(amountPlayer1, { value: amountPlayer1 });
+        await stakingContract.connect(player2).deposit(amountPlayer2, { value: amountPlayer2 });
+        await stakingContract.connect(player3).deposit(amountPlayer3, { value: amountPlayer3 });
+        await stakingContract.connect(player4).deposit(amountPlayer4, { value: amountPlayer4 });
 
         // Get the current block timestamp
         const currentBlock = await ethers.provider.getBlock('latest');
