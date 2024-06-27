@@ -7,8 +7,14 @@ describe('Staking Contract', function () {
 
     beforeEach(async function () {
         [deployer, player1, player2, player3, player4] = await ethers.getSigners();
+
+
+        const MockV3Aggregator = await ethers.getContractFactory('MockV3Aggregator', deployer);
+        mockPriceFeed = await MockV3Aggregator.deploy(ethers.utils.parseUnits("2000", 8)); // Mock price of $2000
+        await mockPriceFeed.deployed();
+
         const Staking = await ethers.getContractFactory('Staking', deployer);
-        stakingContract = await Staking.deploy();
+        stakingContract = await Staking.deploy(mockPriceFeed.address);
         await stakingContract.deployed();
 
         // const amountToSend = ethers.utils.parseEther("10");
@@ -115,6 +121,9 @@ describe('Staking Contract', function () {
         console.log(rewardTokensPlayer2)
         console.log(rewardTokensPlayer3)
         console.log(rewardTokensPlayer4)
+
+
+        console.log(await stakingContract.getLatestETHPrice())
 
     });
 

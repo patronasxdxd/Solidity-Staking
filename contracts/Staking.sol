@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {StakingToken} from "contracts/tokens/StakingToken.sol";
 import {RewardToken} from "contracts/tokens/RewardToken.sol";
 import "hardhat/console.sol";
+import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -35,6 +36,7 @@ contract Staking is Initializable {
     uint256 public stakeStarted;
 
     uint256 public accumulatedRewardPerToken;
+    AggregatorV3Interface internal priceFeed; // Chainlink price feed interface
 
     uint256 public rewardRate;
     uint256 public totalStaked;
@@ -55,7 +57,7 @@ contract Staking is Initializable {
     event RewardPaid(address indexed user, uint256 reward);
     event EmergencyWithdraw(address indexed user, uint256 amount);
 
-    constructor() {
+    constructor(address _oracleAddr) {
         _disableInitializers();
         owner = msg.sender;
         stakingToken = new StakingToken(0);
@@ -68,6 +70,9 @@ contract Staking is Initializable {
         earlyWithdrawalPenalty = 10; // 10% penalty for early withdrawals
         minStakeAmount = 0.5 * 10**18; // Minimum 0.5 token to stake
         maxStakeAmount = 10000 * 10**18; // Maximum 10000 tokens to stake
+
+        // Initialize the Chainlink ETH/USD price feed contract address, for goerli 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e
+        priceFeed = AggregatorV3Interface(_oracleAddr);
     }
 
     // Modifier
@@ -285,6 +290,12 @@ function updateReward(address account) internal {
     }
 
     receive() external payable {}
+
+
+    function getLatestETHPrice() public view returns (int) {
+        (, int price, , ,) = priceFeed.latestRoundData();
+        return price;
+    }
 }
 
 interface IWETH is IERC20 {
