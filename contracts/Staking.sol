@@ -29,6 +29,7 @@ contract Staking is Initializable {
 
     // ERC20 contract address
     StakingToken public stakingToken;
+    IERC20 public weth;
     RewardToken public rewardToken;
 
     uint256 public lastUpdateTime;
@@ -73,6 +74,10 @@ contract Staking is Initializable {
 
         // Initialize the Chainlink ETH/USD price feed contract address, for goerli 0xD4a33860578De61DBAbDc8BFdb98FD742fA7028e
         priceFeed = AggregatorV3Interface(_oracleAddr);
+
+        // Initialize weth for goerli
+        weth = IERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
+
     }
 
     // Modifier
@@ -96,10 +101,8 @@ contract Staking is Initializable {
     }
 
     /// @dev Allows the user to deposit ETH or ERC20 tokens
-    /// @param token, null address to deposit ETH or a ERC20 address.
     /// @param amount to stake.
     function deposit(
-        address token,
         uint256 amount
     ) external payable noReentrant {
         require(amount >= minStakeAmount, "Amount must be greater than minimum stake amount");
@@ -108,22 +111,20 @@ contract Staking is Initializable {
         updateReward(msg.sender);
 
 
-        if (token == address(0)) {
+         if (msg.value > 0) {
             // Handle ETH
             require(msg.value == amount, "Incorrect ETH amount sent");
             balances[msg.sender] = balances[msg.sender].add(msg.value);
             stakingToken.mint(address(this), msg.value);
         } else {
-            // Handle ERC20 token
-            IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+            // Handle WETH
+            weth.safeTransferFrom(msg.sender, address(this), amount);
             balances[msg.sender] = balances[msg.sender].add(amount);
             stakingToken.mint(address(this), amount);
         }
 
         totalStaked = totalStaked.add(amount);
         stakes[msg.sender].amount = stakes[msg.sender].amount.add(amount);
-        console.log("amounted:", stakes[msg.sender].amount);
-        
         emit Staked(msg.sender, amount);
     }
 
