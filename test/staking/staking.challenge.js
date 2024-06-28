@@ -22,6 +22,7 @@ describe('Staking Contract', function () {
         //     to: stakingContract.address,
         //     value: amountToSend
         // });
+        stakeToken = await ethers.getContractAt("IERC20", await stakingContract.stakingToken());
 
         rewardToken = await ethers.getContractAt("IERC20", await stakingContract.rewardToken());
     });
@@ -125,6 +126,39 @@ describe('Staking Contract', function () {
 
         console.log(await stakingContract.getLatestETHPrice())
 
+    });
+
+    it("Should transfer tokens correctly", async function () {
+
+        const initialStakeAmount = ethers.utils.parseEther("2"); // 2 ETH
+        await stakingContract.connect(player1).deposit(initialStakeAmount, { value: initialStakeAmount });
+
+
+        await stakeToken.connect(player1).approve(stakingContract.address, ethers.utils.parseEther("2"));
+
+    
+        await stakingContract.connect(player1).transferStakingToken(player2.address,initialStakeAmount);
+        
+
+
+        // Get the current block timestamp
+        const currentBlock = await ethers.provider.getBlock('latest');
+        const currentTime = currentBlock.timestamp;
+
+        console.log("Current time before adjustment:", currentTime);
+
+        // Increase time by 5000 seconds
+        const newTime = currentTime + 10000;
+        await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
+        await ethers.provider.send("evm_mine", []);
+
+        await stakingContract.connect(player2).withdraw(initialStakeAmount);
+
+        const balance = await stakingContract.getBalancePlayer(player2.address);
+        expect(balance).to.equal(0, "Player should have withdrawn the correct amount");
+        
+
+       
     });
 
 });
