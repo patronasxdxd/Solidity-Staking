@@ -19,13 +19,10 @@ contract Staking is Initializable {
     struct StakeInfo {
         uint256 stakeID;
         uint256 amount;
-        uint256 depositTime; // Timestamp when the stake was initiated
-        uint256 rewardDebt; // To track reward calculation
     }
 
     struct Stake {
         StakeInfo[] stakes;
-        uint256 ethPriceAtDeposit;
         uint256 totalStaked;
     }
 
@@ -46,7 +43,6 @@ contract Staking is Initializable {
     uint256 public minStakeAmount;
     uint256 public maxStakeAmount;
     uint256 public MAX_REWARD_RATE;
-
 
     mapping(address => Stake) public stakes;
     mapping(address => uint256) public balances;
@@ -112,8 +108,6 @@ contract Staking is Initializable {
 
         updateReward(msg.sender);
 
-        uint256 ethPriceAtDeposit = getLatestETHPrice();
-
         if (msg.value > 0) {
             balances[msg.sender] = balances[msg.sender].add(msg.value);
             stakingToken.mint(address(msg.sender), msg.value);
@@ -126,10 +120,9 @@ contract Staking is Initializable {
         totalStaked = totalStaked.add(amount);
         Stake storage userStake = stakes[msg.sender];
         userStake.stakes.push(
-            StakeInfo(userStake.stakes.length, amount, block.timestamp, 0)
-        ); // Initialize rewardDebt to 0
+            StakeInfo(userStake.stakes.length, amount)
+        ); 
         userStake.totalStaked = userStake.totalStaked.add(amount);
-        userStake.ethPriceAtDeposit = ethPriceAtDeposit;
 
         emit Staked(msg.sender, amount);
     }
@@ -137,6 +130,7 @@ contract Staking is Initializable {
     /// @dev Allows user to unstake tokens after the correct time period has elapsed
     /// @param amount - the amount to unlock (in wei)
     function withdraw(uint256 amount) external noReentrant {
+        
         require(
             amount <= balances[msg.sender],
             "Not enough funds in stakingToken"
@@ -198,18 +192,38 @@ contract Staking is Initializable {
     }
 
     /// @dev Allows user to withdraw staked tokens in case of an emergency
-    function emergencyWithdraw() external noReentrant {
+    function emergencyWithdrawAll() external noReentrant {
+
+        updateReward(msg.sender);
         uint256 amount = stakes[msg.sender].totalStaked;
+
+
+
+       require(
+            amount <= balances[msg.sender],
+            "Not enough funds in stakingToken"
+        );
+
+        require(
+            amount <= stakingToken.balanceOf(address(msg.sender)),
+            "Insufficient staking tokens"
+        );
+
+
         uint256 penalty = amount.mul(earlyWithdrawalPenalty).div(100);
         uint256 amountAfterPenalty = amount.sub(penalty);
 
-        stakingToken.burn(amount);
+
+        stakingToken.burnFrom(msg.sender, amount);
         balances[msg.sender] = balances[msg.sender].sub(amount);
+        
+        payable(msg.sender).transfer(amountAfterPenalty);
 
-        IERC20(stakingToken).safeTransfer(msg.sender, amountAfterPenalty);
+        if (penalty > 0) {
+            payable(address(this)).transfer(penalty);
+         }
 
-        stakes[msg.sender].totalStaked = 0;
-        totalStaked = totalStaked.sub(amount);
+        delete stakes[msg.sender];
 
         emit EmergencyWithdraw(msg.sender, amount);
     }
@@ -252,8 +266,6 @@ contract Staking is Initializable {
     function updateReward(address account) internal {
         if (totalStaked > 0) {
             uint256 elapsed = block.timestamp.sub(lastUpdateTime);
-
-        
 
             uint256 rewardPerTokenIncrease = elapsed
                 .mul(rewardRate)
@@ -310,20 +322,6 @@ contract Staking is Initializable {
         maxStakeAmount = _maxStakeAmount;
     }
 
-    // /// @dev gets the stake amount of a one if its stake of a user
-    // /// @param stakeID the id of the stake
-    // function getStakedAmountForID(uint256 stakeID) external {
-    //     Stake storage senderStake = stakes[msg.sender];
-    //     uint256 length = senderStake.stakes.length;
-    //     bool found = false;
-
-    //     for (uint256 i = 0; i < senderStake.stakes.length; i++) {
-    //         if (senderStake.stakes[i].stakeID == stakeId) {
-    //             found = true;
-    //         }
-    //     }
-    // }
-
     function transferAllStakingTokenById(
         address _receiverAddress,
         uint256 _stakeId
@@ -340,22 +338,17 @@ contract Staking is Initializable {
                 found = true;
                 amount = senderStake.stakes[i].amount;
                 receiverStake.stakes.push(senderStake.stakes[i]);
-                // Shift elements to the left to fill the gap
+
                 for (uint256 j = i; j < length - 1; j++) {
                     senderStake.stakes[j] = senderStake.stakes[j + 1];
                 }
-
-                // Remove the last element (now a duplicate)
                 senderStake.stakes.pop();
 
                 break;
             }
         }
 
-
         stakingToken.transferFrom(msg.sender, _receiverAddress, amount);
-
-
 
         balances[msg.sender] = balances[msg.sender].sub(amount);
         balances[_receiverAddress] = balances[_receiverAddress].add(amount);
@@ -363,13 +356,21 @@ contract Staking is Initializable {
         senderStake.totalStaked = senderStake.totalStaked.sub(amount);
         receiverStake.totalStaked = receiverStake.totalStaked.add(amount);
 
-        uint256 ethPriceAtTransfer = getLatestETHPrice();
-        receiverStake.ethPriceAtDeposit = ethPriceAtTransfer;
-
-    
         updateReward(msg.sender);
         updateReward(_receiverAddress);
     }
+
+    function adjustStakeAmounts() public onlyOwner {
+    uint256 currentETHPrice = getLatestETHPrice();
+        if (currentETHPrice < 2000 * 1e8) { 
+            minStakeAmount = 0.25 * 10 ** 18; 
+            maxStakeAmount = 500 * 10 ** 18;  
+        } else {
+            minStakeAmount = 0.5 * 10 ** 18;  
+            maxStakeAmount = 1000 * 10 ** 18; 
+        }
+}
+
 
     receive() external payable {}
 }

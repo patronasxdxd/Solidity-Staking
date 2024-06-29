@@ -297,5 +297,66 @@ describe('Staking Contract', function () {
         expect(balanceAfterWithdrawal).to.equal(amount2, "Player should have correct remaining balance after withdrawal");
     });
 
+    it("Should adjust minimum and maximum stake amounts based on ETH price", async function () {
+        // Initial ETH price is 2000
+        await stakingContract.adjustStakeAmounts();
+
+        let minStakeAmount = await stakingContract.minStakeAmount();
+        let maxStakeAmount = await stakingContract.maxStakeAmount();
+
+        // Check initial values based on the price of 2000
+        expect(minStakeAmount).to.equal(ethers.utils.parseEther("0.5"));
+        expect(maxStakeAmount).to.equal(ethers.utils.parseEther("1000"));
+
+        // Change ETH price to 1000
+        await mockPriceFeed.updateAnswer(1000);
+        await stakingContract.adjustStakeAmounts();
+
+        minStakeAmount = await stakingContract.minStakeAmount();
+        maxStakeAmount = await stakingContract.maxStakeAmount();
+
+        console.log(minStakeAmount)
+
+        // Check values based on the price of 1000
+        expect(minStakeAmount).to.equal(ethers.utils.parseEther("0.25"));
+        expect(maxStakeAmount).to.equal(ethers.utils.parseEther("500"));
+
+        // Change ETH price to 5000
+        await mockPriceFeed.updateAnswer(ethers.utils.parseUnits("5000", 8));
+        await stakingContract.adjustStakeAmounts();
+
+        minStakeAmount = await stakingContract.minStakeAmount();
+        maxStakeAmount = await stakingContract.maxStakeAmount();
+
+        // Check values based on the price of 5000
+        expect(minStakeAmount).to.equal(ethers.utils.parseEther("0.5"));
+        expect(maxStakeAmount).to.equal(ethers.utils.parseEther("1000"));
+    });
+
+
+
+    it("Should correctly handle emergecyWithdrawAll", async function () {
+
+
+        const amount1 = ethers.utils.parseEther("1"); // 1 ETH
+        const amount2 = ethers.utils.parseEther("0.5"); // 0.5 ETH
+        await stakingContract.connect(player1).deposit(amount1, { value: amount1 });
+        await stakingContract.connect(player1).deposit(amount2, { value: amount2 });
+
+        const balanceAfterDeposits = await stakingContract.getBalancePlayer(player1.address);
+        expect(balanceAfterDeposits).to.equal(amount1.add(amount2), "Player should have correct total balance after multiple deposits");
+
+        // Increase time by 10000 seconds
+        const currentBlock = await ethers.provider.getBlock('latest');
+        const newTime = currentBlock.timestamp + 10000;
+        await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
+        await ethers.provider.send("evm_mine", []);
+
+        await stakingContract.connect(player1).emergencyWithdrawAll();
+
+        const balanceAfterWithdrawal = await stakingContract.getBalancePlayer(player1.address);
+        expect(balanceAfterWithdrawal).to.equal(0, "Player should have correct remaining balance after withdrawal");
+    });
+
     
 });
