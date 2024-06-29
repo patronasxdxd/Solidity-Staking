@@ -45,6 +45,8 @@ contract Staking is Initializable {
     uint256 public earlyWithdrawalPenalty;
     uint256 public minStakeAmount;
     uint256 public maxStakeAmount;
+    uint256 public MAX_REWARD_RATE;
+
 
     mapping(address => Stake) public stakes;
     mapping(address => uint256) public balances;
@@ -69,7 +71,8 @@ contract Staking is Initializable {
         timePeriod = 10000;
         earlyWithdrawalPenalty = 10;
         minStakeAmount = 0.5 * 10 ** 18;
-        maxStakeAmount = 10000 * 10 ** 18;
+        maxStakeAmount = 1000 * 10 ** 18;
+        MAX_REWARD_RATE = 150;
 
         priceFeed = AggregatorV3Interface(_oracleAddr);
         weth = IERC20(0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6);
@@ -188,11 +191,10 @@ contract Staking is Initializable {
         updateReward(msg.sender);
         uint256 reward = rewards[msg.sender];
         console.log("final reward:", reward);
-        if (reward > 0) {
-            rewards[msg.sender] = 0;
-            rewardToken.transfer(msg.sender, reward);
-            emit RewardPaid(msg.sender, reward);
-        }
+        require(reward > 0, "No rewards available");
+        rewards[msg.sender] = 0;
+        rewardToken.transfer(msg.sender, reward);
+        emit RewardPaid(msg.sender, reward);
     }
 
     /// @dev Allows user to withdraw staked tokens in case of an emergency
@@ -247,52 +249,14 @@ contract Staking is Initializable {
         return rewards[account];
     }
 
-    function getRewardRate(address account) public view returns (uint256) {
-        uint256 currentEthPrice = getLatestETHPrice();
-        Stake storage userStake = stakes[account];
-
-        if (userStake.stakes.length == 0) {
-            // Handle case where user hasn't staked yet
-            return 100; // Or any default value as needed
-        }
-
-        // Get details of the first stake
-        StakeInfo storage firstStake = userStake.stakes[0];
-
-        // Calculate time since the first deposit in days
-        uint256 timeSinceDeposit = (block.timestamp - firstStake.depositTime) /
-            1 days;
-
-        // Calculate time multiplier
-        uint256 timeMultiplier = (timeSinceDeposit * rewardRate) / 100;
-
-        // Calculate ETH price adjustment
-        uint256 ethPriceAdjustment;
-        if (currentEthPrice > userStake.ethPriceAtDeposit) {
-            ethPriceAdjustment =
-                (currentEthPrice * 1000) /
-                userStake.ethPriceAtDeposit;
-        } else {
-            ethPriceAdjustment =
-                (userStake.ethPriceAtDeposit * 1000) /
-                currentEthPrice;
-        }
-
-        // Calculate adjusted reward rate
-        uint256 adjustedRewardRate = rewardRate + timeMultiplier;
-        adjustedRewardRate = (adjustedRewardRate * ethPriceAdjustment) / 1000;
-
-        return adjustedRewardRate;
-    }
-
     function updateReward(address account) internal {
         if (totalStaked > 0) {
             uint256 elapsed = block.timestamp.sub(lastUpdateTime);
 
-            uint256 currentRewardRate = getRewardRate(account);
+        
 
             uint256 rewardPerTokenIncrease = elapsed
-                .mul(currentRewardRate)
+                .mul(rewardRate)
                 .mul(1e18)
                 .div(totalStaked);
 

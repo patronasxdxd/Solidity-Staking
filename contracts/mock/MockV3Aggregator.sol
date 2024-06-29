@@ -22,4 +22,8 @@ contract MockV3Aggregator {
     {
         return (0, price, block.timestamp, block.timestamp, 0);
     }
+
+     function updateAnswer(int256 _price) external {
+        price = _price;
+    }
 }
