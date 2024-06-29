@@ -195,6 +195,8 @@ contract Staking is Initializable {
         }
     }
 
+
+    /// @dev Allows user to withdraw staked tokens in case of an emergency
     function emergencyWithdraw() external noReentrant {
         uint256 amount = stakes[msg.sender].totalStaked;
         uint256 penalty = amount.mul(earlyWithdrawalPenalty).div(100);
@@ -211,22 +213,38 @@ contract Staking is Initializable {
         emit EmergencyWithdraw(msg.sender, amount);
     }
 
+
+
+  /// @dev Returns the balance of staking tokens held by an account.
+    /// @param account The account address to check balance for.
+    /// @return The balance of staking tokens.
     function balanceOfStakingToken(
         address account
     ) external view returns (uint256) {
         return stakingToken.balanceOf(account);
     }
 
+
+    /// @dev Returns the balance of reward tokens held by an account.
+    /// @param account The account address to check balance for.
+    /// @return The balance of reward tokens.
     function balanceOfRewardToken(
         address account
     ) external view returns (uint256) {
         return rewardToken.balanceOf(account);
     }
 
+
+    /// @dev Returns the total amount of staking tokens held by the staking contract.
+    /// @return The total balance of staking tokens.
     function totalStakingTokens() external view returns (uint256) {
         return stakingToken.balanceOf(address(this));
     }
 
+
+    /// @dev Returns the staked balance of a specific player.
+    /// @param account The player's address to check staked balance for.
+    /// @return The staked balance of the player.
     function getBalancePlayer(address account) external view returns (uint256) {
         return balances[account];
     }
@@ -353,7 +371,6 @@ contract Staking is Initializable {
 
         uint256 remainingAmount = amount;
 
-        // Adjust the sender's stakes
         for (
             uint256 i = 0;
             i < senderStake.stakes.length && remainingAmount > 0;
