@@ -195,7 +195,6 @@ contract Staking is Initializable {
         }
     }
 
-
     /// @dev Allows user to withdraw staked tokens in case of an emergency
     function emergencyWithdraw() external noReentrant {
         uint256 amount = stakes[msg.sender].totalStaked;
@@ -213,9 +212,7 @@ contract Staking is Initializable {
         emit EmergencyWithdraw(msg.sender, amount);
     }
 
-
-
-  /// @dev Returns the balance of staking tokens held by an account.
+    /// @dev Returns the balance of staking tokens held by an account.
     /// @param account The account address to check balance for.
     /// @return The balance of staking tokens.
     function balanceOfStakingToken(
@@ -223,7 +220,6 @@ contract Staking is Initializable {
     ) external view returns (uint256) {
         return stakingToken.balanceOf(account);
     }
-
 
     /// @dev Returns the balance of reward tokens held by an account.
     /// @param account The account address to check balance for.
@@ -234,13 +230,11 @@ contract Staking is Initializable {
         return rewardToken.balanceOf(account);
     }
 
-
     /// @dev Returns the total amount of staking tokens held by the staking contract.
     /// @return The total balance of staking tokens.
     function totalStakingTokens() external view returns (uint256) {
         return stakingToken.balanceOf(address(this));
     }
-
 
     /// @dev Returns the staked balance of a specific player.
     /// @param account The player's address to check staked balance for.
@@ -352,16 +346,55 @@ contract Staking is Initializable {
         maxStakeAmount = _maxStakeAmount;
     }
 
-    function transferStakingToken(
-        address _receiverAddress,
-        uint256 amount
-    ) external {
-        stakingToken.transferFrom(msg.sender, _receiverAddress, amount);
-        balances[msg.sender] = balances[msg.sender].sub(amount);
-        balances[_receiverAddress] = balances[_receiverAddress].add(amount);
+    // /// @dev gets the stake amount of a one if its stake of a user
+    // /// @param stakeID the id of the stake
+    // function getStakedAmountForID(uint256 stakeID) external {
+    //     Stake storage senderStake = stakes[msg.sender];
+    //     uint256 length = senderStake.stakes.length;
+    //     bool found = false;
 
+    //     for (uint256 i = 0; i < senderStake.stakes.length; i++) {
+    //         if (senderStake.stakes[i].stakeID == stakeId) {
+    //             found = true;
+    //         }
+    //     }
+    // }
+
+    function transferAllStakingTokenById(
+        address _receiverAddress,
+        uint256 _stakeId
+    ) external {
         Stake storage senderStake = stakes[msg.sender];
         Stake storage receiverStake = stakes[_receiverAddress];
+
+        uint256 length = senderStake.stakes.length;
+        bool found = false;
+        uint256 amount = 0;
+
+        for (uint256 i = 0; i < senderStake.stakes.length; i++) {
+            if (senderStake.stakes[i].stakeID == _stakeId) {
+                found = true;
+                amount = senderStake.stakes[i].amount;
+                receiverStake.stakes.push(senderStake.stakes[i]);
+                // Shift elements to the left to fill the gap
+                for (uint256 j = i; j < length - 1; j++) {
+                    senderStake.stakes[j] = senderStake.stakes[j + 1];
+                }
+
+                // Remove the last element (now a duplicate)
+                senderStake.stakes.pop();
+
+                break;
+            }
+        }
+
+
+        stakingToken.transferFrom(msg.sender, _receiverAddress, amount);
+
+
+
+        balances[msg.sender] = balances[msg.sender].sub(amount);
+        balances[_receiverAddress] = balances[_receiverAddress].add(amount);
 
         senderStake.totalStaked = senderStake.totalStaked.sub(amount);
         receiverStake.totalStaked = receiverStake.totalStaked.add(amount);
@@ -369,35 +402,7 @@ contract Staking is Initializable {
         uint256 ethPriceAtTransfer = getLatestETHPrice();
         receiverStake.ethPriceAtDeposit = ethPriceAtTransfer;
 
-        uint256 remainingAmount = amount;
-
-        for (
-            uint256 i = 0;
-            i < senderStake.stakes.length && remainingAmount > 0;
-            i++
-        ) {
-            StakeInfo storage stakeInfo = senderStake.stakes[i];
-            if (stakeInfo.amount > 0) {
-                if (stakeInfo.amount >= remainingAmount) {
-                    stakeInfo.amount = stakeInfo.amount.sub(remainingAmount);
-                    break;
-                } else {
-                    remainingAmount = remainingAmount.sub(stakeInfo.amount);
-                    stakeInfo.amount = 0;
-                }
-            }
-        }
-
-        // Add a new stake for the receiver
-        receiverStake.stakes.push(
-            StakeInfo({
-                stakeID: receiverStake.stakes.length,
-                amount: amount,
-                depositTime: block.timestamp,
-                rewardDebt: 0
-            })
-        );
-
+    
         updateReward(msg.sender);
         updateReward(_receiverAddress);
     }

@@ -140,11 +140,15 @@ describe('Staking Contract', function () {
         await stakeToken.connect(player1).approve(stakingContract.address, ethers.utils.parseEther("2"));
 
     
-        await stakingContract.connect(player1).transferStakingToken(player2.address,initialStakeAmount);
+        await stakingContract.connect(player1).transferAllStakingTokenById(player2.address,0);
         
 
         const balanceAfterTransfer = await stakingContract.getBalancePlayer(player1.address);
         expect(balanceAfterTransfer).to.equal(0, "Player should have withdrawn the correct amount");
+
+
+        const receiverbalanceAfterTransfer = await stakingContract.getBalancePlayer(player2.address);
+        expect(receiverbalanceAfterTransfer).to.equal(initialStakeAmount, "Player should have withdrawn the correct amount");
 
 
         // Get the current block timestamp
@@ -158,9 +162,11 @@ describe('Staking Contract', function () {
         await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
         await ethers.provider.send("evm_mine", []);
 
+   
         await stakingContract.connect(player2).withdraw(initialStakeAmount);
 
         const balance = await stakingContract.getBalancePlayer(player2.address);
+ 
         expect(balance).to.equal(0, "Player should have withdrawn the correct amount");
     });
 
