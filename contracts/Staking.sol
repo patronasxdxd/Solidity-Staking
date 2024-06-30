@@ -210,23 +210,28 @@ contract Staking is Initializable {
         );
 
 
+        console.log(amount);   
+        console.log(earlyWithdrawalPenalty);
+
         uint256 penalty = amount.mul(earlyWithdrawalPenalty).div(100);
         uint256 amountAfterPenalty = amount.sub(penalty);
 
 
         stakingToken.burnFrom(msg.sender, amount);
         balances[msg.sender] = balances[msg.sender].sub(amount);
-        
+        totalStaked = totalStaked.sub(amountAfterPenalty);
+
         payable(msg.sender).transfer(amountAfterPenalty);
 
         if (penalty > 0) {
             payable(address(this)).transfer(penalty);
+            balances[address(this)] = balances[address(this)].add(penalty);
          }
 
         delete stakes[msg.sender];
-
         emit EmergencyWithdraw(msg.sender, amount);
     }
+
 
     /// @dev Returns the balance of staking tokens held by an account.
     /// @param account The account address to check balance for.

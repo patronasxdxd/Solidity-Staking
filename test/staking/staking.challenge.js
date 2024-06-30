@@ -20,11 +20,11 @@ describe('Staking Contract', function () {
         await stakingContract.deployed();
 
 
-        const amountToSend = ethers.utils.parseEther("10");
-        await deployer.sendTransaction({
-            to: stakingContract.address,
-            value: amountToSend
-        });
+        // const amountToSend = ethers.utils.parseEther("10");
+        // await deployer.sendTransaction({
+        //     to: stakingContract.address,
+        //     value: amountToSend
+        // });
 
 
         stakeToken = await ethers.getContractAt("IERC20", await stakingContract.stakingToken());
@@ -336,8 +336,6 @@ describe('Staking Contract', function () {
 
 
     it("Should correctly handle emergecyWithdrawAll", async function () {
-
-
         const amount1 = ethers.utils.parseEther("1"); // 1 ETH
         const amount2 = ethers.utils.parseEther("0.5"); // 0.5 ETH
         await stakingContract.connect(player1).deposit(amount1, { value: amount1 });
@@ -352,11 +350,71 @@ describe('Staking Contract', function () {
         await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
         await ethers.provider.send("evm_mine", []);
 
+        console.log( await stakingContract.getBalancePlayer(stakingContract.address));
+
         await stakingContract.connect(player1).emergencyWithdrawAll();
 
         const balanceAfterWithdrawal = await stakingContract.getBalancePlayer(player1.address);
         expect(balanceAfterWithdrawal).to.equal(0, "Player should have correct remaining balance after withdrawal");
+
+
+       console.log( await stakingContract.getBalancePlayer(stakingContract.address));
     });
 
+
+    it("Should correctly handle emergencyWithdrawAll and apply penalty", async function () {
+        const amount1 = ethers.utils.parseEther("1"); // 1 ETH
+        const amount2 = ethers.utils.parseEther("0.5"); // 0.5 ETH
     
+        // Player deposits 1 ETH and 0.5 ETH
+        await stakingContract.connect(player1).deposit(amount1, { value: amount1 });
+        await stakingContract.connect(player1).deposit(amount2, { value: amount2 });
+    
+        // Ensure correct balances after deposits
+        const initialBalancePlayer = await ethers.provider.getBalance(player1.address);
+        const initialBalanceContract = await ethers.provider.getBalance(stakingContract.address);
+
+        console.log("swag",initialBalancePlayer)
+        console.log("swag2",initialBalanceContract)
+    
+        // Increase time by 10000 seconds
+           const currentBlock = await ethers.provider.getBlock('latest');
+           const newTime = currentBlock.timestamp + 10000;
+           await ethers.provider.send("evm_setNextBlockTimestamp", [newTime]);
+           await ethers.provider.send("evm_mine", []);
+        
+        const finalBalanceContract1 = await stakingContract.balanceOfRewardToken(stakingContract.address);
+
+        // Call emergencyWithdrawAll
+        await stakingContract.connect(player1).emergencyWithdrawAll();
+    
+        // Calculate penalties
+        const totalStaked = amount1.add(amount2);
+        const penalty = totalStaked.mul(10).div(100);
+
+        // Expected final balances
+        const finalBalancePlayer = await stakingContract.getBalancePlayer(player1.address);
+        const finalBalanceContract = await stakingContract.getBalancePlayer(stakingContract.address);
+
+
+        const initialBalancePlayer2 = await ethers.provider.getBalance(player1.address);
+        const initialBalanceContract2 = await ethers.provider.getBalance(stakingContract.address);
+
+        console.log("swag",initialBalancePlayer2)
+        console.log("swag2",initialBalanceContract2)
+    
+        // Assertions
+        expect(finalBalancePlayer).to.be.equal(
+           0 
+        );
+
+        expect(finalBalanceContract).to.equal(
+            penalty,
+            "Contract should receive penalty amount"
+        );
+    });
+
+
+    
+
 });
