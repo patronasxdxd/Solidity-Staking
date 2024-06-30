@@ -4,8 +4,8 @@ pragma solidity >=0.7.0 <0.9.0;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {StakingToken} from "contracts/tokens/StakingToken.sol";
-import {RewardToken} from "contracts/tokens/RewardToken.sol";
+import {StakingToken} from "contracts/staking/tokens/StakingToken.sol";
+import {RewardToken} from "contracts/staking/tokens/RewardToken.sol";
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
 
