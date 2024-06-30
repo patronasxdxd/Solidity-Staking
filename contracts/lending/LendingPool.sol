@@ -2,6 +2,8 @@
 
 pragma solidity >=0.7.0 <0.9.0;
 import "./ILendingPool.sol";
+import "./GovernorContract.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "hardhat/console.sol";
 import "@chainlink/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol";
@@ -12,6 +14,8 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 contract LendingPool is ILendingPool {
     //Gov token
     //lending/borrowing token = aToken
+
+    GovernorContract public governorContract;
 
     mapping(address => Reserve) public reserves;
     mapping(address => mapping(address => Loan)) public loans;
@@ -29,6 +33,10 @@ contract LendingPool is ILendingPool {
         uint256 amount,
         address indexed asset
     );
+
+    constructor(address payable governorContractAddress) {
+        governorContract = GovernorContract(governorContractAddress);
+    }
 
     function deposit(address asset, uint256 amount) external override {
         IERC20(asset).transferFrom(msg.sender, address(this), amount);
@@ -51,42 +59,29 @@ contract LendingPool is ILendingPool {
     }
 
     function borrow(address asset, uint256 amount) external override {
-
-        console.log("swaglord",userCollateral[msg.sender][asset]);
-
- 
-
         uint256 collateralValue = (userCollateral[msg.sender][asset] *
             getAssetPrice(asset)) / (10 ** 18); // Assuming asset price is scaled to 18 decimals
-        console.log("collateralValue", collateralValue);
         uint256 maxBorrowable = (collateralValue * COLLATERAL_FACTOR) / 100;
-        console.log(amount);
-        console.log("before availableLiquidity", reserves[asset].availableLiquidity);
-          console.log("before principal",  loans[msg.sender][asset].principal);
-            console.log("before interest",  loans[msg.sender][asset].interest);
 
-      
-         require(amount <= maxBorrowable, "Insufficient collateral");
+        require(amount <= maxBorrowable, "Insufficient collateral");
 
         require(
             reserves[asset].availableLiquidity >= amount,
             "Not enough liquidity"
         );
-     
-     
 
-   
         reserves[asset].availableLiquidity -= amount;
         loans[msg.sender][asset].principal += amount;
         loans[msg.sender][asset].interest = calculateInterest(
             loans[msg.sender][asset].principal
         );
 
-
-
-        console.log("after availableLiquidity", reserves[asset].availableLiquidity);
-          console.log("after principal",  loans[msg.sender][asset].principal);
-            console.log("after interest ",  loans[msg.sender][asset].interest);
+        console.log(
+            "after availableLiquidity",
+            reserves[asset].availableLiquidity
+        );
+        console.log("after principal", loans[msg.sender][asset].principal);
+        console.log("after interest ", loans[msg.sender][asset].interest);
 
         IERC20(asset).transfer(msg.sender, amount);
 
@@ -94,10 +89,15 @@ contract LendingPool is ILendingPool {
         emit Borrow(msg.sender, amount, asset);
     }
 
-     function repay(address asset, uint256 amount) external override {
-        require(loans[msg.sender][asset].principal >= amount, "Repaying more than borrowed");
+    function repay(address asset, uint256 amount) external override {
+        require(
+            loans[msg.sender][asset].principal >= amount,
+            "Repaying more than borrowed"
+        );
         loans[msg.sender][asset].principal -= amount;
-        loans[msg.sender][asset].interest = calculateInterest(loans[msg.sender][asset].principal);
+        loans[msg.sender][asset].interest = calculateInterest(
+            loans[msg.sender][asset].principal
+        );
 
         IERC20(asset).transferFrom(msg.sender, address(this), amount);
         reserves[asset].availableLiquidity += amount;
@@ -138,4 +138,29 @@ contract LendingPool is ILendingPool {
         // Implement interest calculation logic
         return principal / 10; // Dummy interest calculation
     }
+
+    function createGovernorProposal(
+        string memory description
+    ) external override {
+        governorContract.createProposal(description);
+    }
+
+    function voteGovernorProposal(
+        uint256 proposalId,
+        bool support
+    ) external override {
+        governorContract.vote(proposalId, support);
+    }
+
+    function executeGovernorProposal(uint256 proposalId) external override {
+        governorContract.executeProposal(proposalId);
+    }
+
+    function getGovernorProposal(
+        uint256 proposalId
+    ) external view override returns (GovernorContract.Proposal memory) {
+        return governorContract.getProposal(proposalId);
+    }
+
+    // receive() external payable {}
 }

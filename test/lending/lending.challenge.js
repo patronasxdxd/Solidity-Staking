@@ -8,17 +8,40 @@ describe('Lending Contract', function () {
     beforeEach(async function () {
         [deployer, player1, player2, player3, player4] = await ethers.getSigners();
 
+
+        // Deploy TimelockController
+        const timelock = await ethers.getContractFactory("TimeLock");
+        const timelockInstance = await timelock.deploy(86400,[],[],deployer.address); // 1 day timelock
+        await timelockInstance.deployed();
+
         const MockToken = await ethers.getContractFactory('MockToken', deployer);
         mockToken = await MockToken.deploy();
         await mockToken.deployed();
 
+        
+
+        // Deploy GovernorContract
+        const governorContractFactory = await ethers.getContractFactory("GovernorContract");
+        governorContract = await governorContractFactory.deploy(
+            mockToken.address,
+            timelockInstance.address,
+            50,    // Quorum percentage (50%)
+            120,  // Voting period (2 hours)
+            1     // Voting delay (1 block)
+        );
+        await governorContract.deployed();
+
+
+        
+
         const Lending = await ethers.getContractFactory('LendingPool', deployer);
-        lendingContract = await Lending.deploy();
+        lendingContract = await Lending.deploy(governorContract.address);
         await lendingContract.deployed();
 
-        // Mint some tokens for the players
         await mockToken.mint(player1.address, ethers.utils.parseEther('1000'));
         await mockToken.mint(player2.address, ethers.utils.parseEther('1000'));
+        // await mockToken.connect(player1).delegate(player1.address);
+        // await mockToken.connect(player2).delegate(player2.address);
     });
 
     it('Should deposit correctly', async function () {
@@ -114,6 +137,46 @@ describe('Lending Contract', function () {
             lendingContract.connect(player1).borrow(mockToken.address, borrowAmount)
         ).to.be.revertedWith('Insufficient collateral');
     });
+    
 
-
+    it('Should create a Governor proposal correctly', async function () {
+        const proposalDescription = "Proposal to test";
+    
+        // Delegate tokens to self to enable voting
+        const delegateTx = await mockToken.connect(player1).delegate(player1.address);
+        await delegateTx.wait();
+    
+        // Get current block number before mining
+        const currentBlockBefore = await ethers.provider.getBlockNumber();
+        console.log("Current Block Number Before Mining:", currentBlockBefore);
+    
+        // Mine a block after delegation
+        await ethers.provider.send("evm_mine", []);
+    
+        // Get current block number after mining
+        const currentBlockAfter = await ethers.provider.getBlockNumber();
+        console.log("Current Block Number After Mining:", currentBlockAfter);
+    
+        // Check voting power after delegation
+        const player1Votes = await governorContract.getVotes(player1.address, currentBlockAfter);
+    
+        // Define proposal details
+        const targets = [];
+        const values = [];
+        const calldatas = [];
+    
+        // Create a proposal
+        const proposeTx = await governorContract.connect(player1).propose(targets, values, calldatas, proposalDescription);
+        const proposeReceipt = await proposeTx.wait();
+    
+        // Retrieve proposal ID from emitted event
+        const proposalId = proposeReceipt.events.find(event => event.event === 'ProposalCreated').args.proposalId;
+    
+        // Retrieve proposal details
+        const proposal = await governorContract.proposals(proposalId);
+    
+        // Assert that the proposal was created successfully
+        expect(proposal.proposalId).to.equal(proposalId, "Proposal ID should match");
+    });
+    
 });
