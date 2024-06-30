@@ -21,9 +21,24 @@ even if the current ETH price is lower than their initial stake,
 
  also holds in account in the focumale how much time left of the stake, the earlier someone stakes the more rewardtokens
 
-
-
-
  If its the first deposit, hold in count how long the stake is gonna last, so if they invested early they get more reward rate, also if they do more, it should increase,  and use the ETH price to see reward token
 
 if they deposit for the second time, they should be able to use the initial deposit amount price if it was higher otherwise use current 
+
+
+
+
+
+# lending
+
+
+# setup 
+
+open terminal
+
+anvil --block-time 10
+
+
+
+yarn hardhat run scripts/deployLendingPool --network localhost
+npx hardhat test
