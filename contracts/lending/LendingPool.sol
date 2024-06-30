@@ -51,21 +51,31 @@ contract LendingPool is ILendingPool {
     }
 
     function borrow(address asset, uint256 amount) external override {
+
+        console.log("swaglord",userCollateral[msg.sender][asset]);
+
+ 
+
         uint256 collateralValue = (userCollateral[msg.sender][asset] *
             getAssetPrice(asset)) / (10 ** 18); // Assuming asset price is scaled to 18 decimals
         console.log("collateralValue", collateralValue);
         uint256 maxBorrowable = (collateralValue * COLLATERAL_FACTOR) / 100;
-        console.log("maxBorrowable", maxBorrowable);
+        console.log(amount);
+        console.log("before availableLiquidity", reserves[asset].availableLiquidity);
+          console.log("before principal",  loans[msg.sender][asset].principal);
+            console.log("before interest",  loans[msg.sender][asset].interest);
 
-        require(amount <= maxBorrowable, "Insufficient collateral");
+      
+         require(amount <= maxBorrowable, "Insufficient collateral");
+
         require(
             reserves[asset].availableLiquidity >= amount,
             "Not enough liquidity"
         );
+     
+     
 
-        console.log("before availableLiquidity", reserves[asset].availableLiquidity);
-          console.log("before principal",  loans[msg.sender][asset].principal);
-            console.log("before interest",  loans[msg.sender][asset].interest);
+   
         reserves[asset].availableLiquidity -= amount;
         loans[msg.sender][asset].principal += amount;
         loans[msg.sender][asset].interest = calculateInterest(

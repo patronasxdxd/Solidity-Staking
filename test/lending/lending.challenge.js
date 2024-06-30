@@ -30,6 +30,7 @@ describe('Lending Contract', function () {
         expect(collateral).to.equal(amount, 'Player should have deposited the correct amount');
     });
 
+
     it('Should withdraw correctly', async function () {
         const depositAmount = ethers.utils.parseEther('100');
         const withdrawAmount = ethers.utils.parseEther('50'); 
@@ -41,6 +42,18 @@ describe('Lending Contract', function () {
 
         const collateral = await lendingContract.userCollateral(player1.address, mockToken.address);
         expect(collateral).to.equal(depositAmount.sub(withdrawAmount), 'Player should have withdrawn the correct amount');
+    });
+
+    it('Should fail to withdraw more than deposited', async function () {
+        const depositAmount = ethers.utils.parseEther('100');
+        const withdrawAmount = ethers.utils.parseEther('150'); 
+
+        await mockToken.connect(player1).approve(lendingContract.address, depositAmount);
+        await lendingContract.connect(player1).deposit(mockToken.address, depositAmount);
+
+        await expect(
+            lendingContract.connect(player1).withdraw(mockToken.address, withdrawAmount)
+        ).to.be.revertedWith('Not enough liquidity');
     });
 
     it('Should borrow correctly', async function () {
@@ -55,4 +68,52 @@ describe('Lending Contract', function () {
         const loan = await lendingContract.loans(player1.address, mockToken.address);
         expect(loan.principal).to.equal(borrowAmount, 'Player should have borrowed the correct amount');
     });
+
+
+    it('Should fail to borrow without enough collateral', async function () {
+        const depositAmount = ethers.utils.parseEther('50'); // 50 tokens
+        const borrowAmount = ethers.utils.parseEther('50'); // 50 tokens
+
+        await mockToken.connect(player1).approve(lendingContract.address, depositAmount);
+        await lendingContract.connect(player1).deposit(mockToken.address, depositAmount)
+
+        await expect(
+            lendingContract.connect(player1).borrow(mockToken.address, borrowAmount)
+        ).to.be.revertedWith('Insufficient collateral');
+    });
+
+
+    it('Should fail to borrow more than liquidity', async function () {
+        const depositAmount = ethers.utils.parseEther('1000'); // 500 tokens
+        const borrowAmount = ethers.utils.parseEther('500'); // 1000 tokens
+    
+        await mockToken.connect(player1).approve(lendingContract.address, depositAmount);
+        await lendingContract.connect(player1).deposit(mockToken.address, depositAmount);
+
+        await lendingContract.connect(player1).withdraw(mockToken.address, depositAmount)
+
+
+        await expect(
+            lendingContract.connect(player1).borrow(mockToken.address, borrowAmount)
+        ).to.be.revertedWith('Insufficient collateral');
+    });
+
+
+
+    it('Should fail to borrow more than collateral', async function () {
+        const depositAmount = ethers.utils.parseEther('1000'); // 500 tokens
+        const borrowAmount = ethers.utils.parseEther('500'); // 1000 tokens
+    
+        await mockToken.connect(player1).approve(lendingContract.address, depositAmount);
+        await lendingContract.connect(player1).deposit(mockToken.address, depositAmount);
+
+        await lendingContract.connect(player1).withdraw(mockToken.address, depositAmount)
+
+
+        await expect(
+            lendingContract.connect(player1).borrow(mockToken.address, borrowAmount)
+        ).to.be.revertedWith('Insufficient collateral');
+    });
+
+
 });
