@@ -21,6 +21,16 @@ async function main() {
     await mockToken.deployed();
     console.log('MockToken deployed to:', mockToken.address);
 
+    // Mint tokens for players
+    await mockToken.connect(player1).mint(player1.address, ethers.utils.parseEther('1000'));
+    await mockToken.connect(player2).mint(player2.address, ethers.utils.parseEther('1000'));
+
+    // Delegate voting power to the deployer (optional step if your contract supports delegation)
+    // Example: delegate voting power from player1 to deployer
+    await mockToken.connect(player1).delegate(deployer.address);
+
+    console.log('Voting power delegated.');
+
     // Deploy GovernorContract
     const governorContractFactory = await ethers.getContractFactory("GovernorContract");
     const governorContract = await governorContractFactory.deploy(
@@ -33,30 +43,35 @@ async function main() {
     await governorContract.deployed();
     console.log('GovernorContract deployed to:', governorContract.address);
 
-    // Deploy LendingPool
-    const Lending = await ethers.getContractFactory('LendingPool');
-    const lendingContract = await Lending.deploy(governorContract.address);
-    await lendingContract.deployed();
-    console.log('LendingPool deployed to:', lendingContract.address);
 
-    // Mint tokens for players
-    await mockToken.connect(player1).mint(player1.address, ethers.utils.parseEther('1000'));
-    await mockToken.connect(player2).mint(player2.address, ethers.utils.parseEther('1000'));
 
-    // Create a proposal
-    const description = "Sample Proposal"; // Replace with actual description
-    const proposalId = await governorContract.createProposal(description);
+      // Deploy MockToken
+      const Lending = await ethers.getContractFactory('LendingPool');
+      const lendingContract = await Lending.deploy(mockToken.address);
+      await lendingContract.deployed();
+      console.log('MockToken deployed to:', lendingContract.address);
+
+
+       
+
+
+    // Create a proposal with minting tokens as an action
+    const description = "Mint Tokens Proposal";
+    const mintAction = {
+        target: mockToken.address,
+        callData: mockToken.interface.encodeFunctionData('mint', [player1.address, ethers.utils.parseEther('1')])
+    };
+
+
+    const proposalId = await lendingContract.createGovernorProposal(description, {
+        gasLimit: 5000000  // Example gas limit, adjust as needed
+    });
 
     console.log(`Proposal created with ID: ${proposalId}`);
 
-    // Optionally vote on the proposal
-    // Example: voting in favor of the proposal
-    await governorContract.connect(player1).vote(proposalId, true);
+    // await governorContract.connect(player1).vote(proposalId, true);
 
     console.log('Proposal voted on by Player1.');
-
-    // Example: execute the proposal (after voting period and if quorum is met)
-    // await governorContract.executeProposal(proposalId);
 
     console.log('Deployment and proposal creation completed successfully.');
 }
