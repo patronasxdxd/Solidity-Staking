@@ -113,6 +113,11 @@ async function main() {
       await lendingContract.connect(player1).voteGovernorProposal(proposal.proposalId, true);
 
 
+      //cant vote twice now
+      // await lendingContract.connect(player1).voteGovernorProposal(proposal.proposalId, true);
+
+
+
       const [forVotes, againstVotes] = await lendingContracting.connect(player1).getGovernorProposalVotes(proposal.proposalId);
 
         console.log('voting count for votes now?',forVotes)

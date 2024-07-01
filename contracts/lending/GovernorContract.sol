@@ -26,6 +26,9 @@ contract GovernorContract is
         bool executed;
     }
 
+
+    mapping(address => mapping(uint256 => bool)) public hasVoted;
+
     mapping(uint256 => uint256) public totalVotesForProposal;
     mapping(uint256 => Proposal) public proposals;
     uint256 public proposalCount;
@@ -83,10 +86,18 @@ contract GovernorContract is
     }
 
     function vote(uint256 proposalId, bool support) external {
-        // require(
-        //     state(proposalId) == ProposalState.Active,
-        //     "Governor: voting is closed"
-        // );
+
+         address voter = msg.sender;
+        require(!hasVoted[voter][proposalId], "Already voted on this proposal");
+
+        require(
+            state(proposalId) == ProposalState.Active,
+            "Governor: voting is closed"
+        );
+
+        hasVoted[voter][proposalId] = true;
+
+
         Proposal storage proposal = proposals[proposalId];
 
         uint256 weight = getVotes(msg.sender, block.number - 1);
