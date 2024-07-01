@@ -3,7 +3,7 @@ import {LendingPool} from '../contracts/lending/LendingPool.sol'
 
 
 async function main() {
-    const [deployer, player1, player2] = await ethers.getSigners();
+  const [deployer, player1, player2, player3] = await ethers.getSigners();
 
     console.log('Deploying contracts with the following addresses:');
     console.log('Deployer:', deployer.address);
@@ -64,7 +64,7 @@ async function main() {
 
      // Delegate voting power to the deployer (optional step if your contract supports delegation)
     // Example: delegate voting power from player1 to deployer
-    await mockToken.connect(player1).delegate(lendingContract.address);
+    await mockToken.connect(player1).delegate(player1.address);
 
   
   const description = "Mint Tokens Proposal";
@@ -81,7 +81,7 @@ async function main() {
   const calldatas = [mintAction.callData];
   
   // Create the proposal
-  const proposalId = await lendingContract.connect(player1).createGovernorProposal(description, targets, values, calldatas);
+  await governorContract.connect(player1).createProposal(description,targets, values, calldatas);
   // console.log(`Proposal created with ID: ${proposalId}`);
 
     // const proposalId = await lendingContracting.connect(player1).createGovernorProposal(description);
@@ -110,7 +110,15 @@ async function main() {
 
     // state 0 means pending
     // state 1 means active
-      await lendingContract.connect(player1).voteGovernorProposal(proposal.proposalId, true);
+      await governorContract.connect(player1).vote(proposal.proposalId, true);
+      // await governorContract.connect(player1).vote(proposal.proposalId, true);
+
+
+      await mockToken.connect(player1).transfer(player3.address, ethers.utils.parseEther('100'));
+
+      await mockToken.connect(player3).delegate(player3.address);
+
+      await governorContract.connect(player3).vote(proposal.proposalId, false);
 
 
       //cant vote twice now
@@ -118,7 +126,7 @@ async function main() {
 
 
 
-      const [forVotes, againstVotes] = await lendingContracting.connect(player1).getGovernorProposalVotes(proposal.proposalId);
+      const [forVotes, againstVotes] = await governorContract.connect(player1).getProposalVotes(proposal.proposalId);
 
         console.log('voting count for votes now?',forVotes)
     console.log('voting count against votes now?',againstVotes)
