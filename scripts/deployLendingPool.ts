@@ -104,41 +104,20 @@ async function main() {
 
 
 
-    // to go forward 1 block
-    await mockToken.connect(player1).approve(lendingContract.address, 10);
-    await lendingContract.connect(player1).deposit(mockToken.address, 10)
-    
-
-    console.log("swag state",await governorContract.state(proposal.proposalId))
-    console.log("swag state",await governorContract.state(proposal.proposalId))
-    console.log("swag state",await governorContract.state(proposal.proposalId))
-    console.log("swag state",await governorContract.state(proposal.proposalId))
-    console.log("swag state",await governorContract.state(proposal.proposalId))
-   
+    // // to go forward 1 block
+    await mockToken.mockMineBlock()
 
 
+    // state 0 means pending
+    // state 1 means active
       await lendingContract.connect(player1).voteGovernorProposal(proposal.proposalId, true);
 
 
+      const [forVotes, againstVotes] = await lendingContracting.connect(player1).getGovernorProposalVotes(proposal.proposalId);
 
-
-
-
-    // 0 = Against, 1 = For, 2 = Abstain for this example
-    await governorContract.castVoteWithReason(proposal.proposalId,1,"why not")
-
-    // console.log('Proposal voted on by Player1.');
-
-
-    // console.log(await governorContract.getProposal(0))
-
-    // console.log(await governorContract.getProposal(1))
-    
-
-    // const [forVotes, againstVotes] = await lendingContracting.connect(player1).getGovernorProposalVotes(1);
-
-    // console.log('voting count for votes now?',forVotes)
-    // console.log('voting count against votes now?',againstVotes)
+        console.log('voting count for votes now?',forVotes)
+    console.log('voting count against votes now?',againstVotes)
+    console.log('Deployment and proposal creation completed successfully.');
     // console.log('Deployment and proposal creation completed successfully.');
 }
 
