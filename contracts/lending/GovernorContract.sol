@@ -43,11 +43,18 @@ contract GovernorContract is
         GovernorTimelockControl(_timelock)
     {}
 
-    function getProposal(uint256 proposalId) external view returns (Proposal memory) {
+    function getProposal(
+        uint256 proposalId
+    ) external view returns (Proposal memory) {
         return proposals[proposalId];
     }
 
-    function createProposal(string memory description) external {
+    function createProposal(
+        string memory description,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas
+    ) external {
         proposalCount++;
         uint256 proposalId = proposalCount;
 
@@ -60,15 +67,15 @@ contract GovernorContract is
             executed: false
         });
 
-        address[] memory targets = new address[](0);
-        uint256[] memory values = new uint256[](0);
-        bytes[] memory calldatas = new bytes[](0);
 
         propose(targets, values, calldatas, description);
     }
 
     function vote(uint256 proposalId, bool support) external {
-        require(state(proposalId) == ProposalState.Active, "Governor: voting is closed");
+        require(
+            state(proposalId) == ProposalState.Active,
+            "Governor: voting is closed"
+        );
         Proposal storage proposal = proposals[proposalId];
 
         uint256 weight = getVotes(msg.sender, block.number - 1);
@@ -82,7 +89,10 @@ contract GovernorContract is
     }
 
     function executeProposal(uint256 proposalId) external {
-        require(state(proposalId) == ProposalState.Succeeded, "Governor: proposal not succeeded");
+        require(
+            state(proposalId) == ProposalState.Succeeded,
+            "Governor: proposal not succeeded"
+        );
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
 
@@ -90,8 +100,13 @@ contract GovernorContract is
         uint256[] memory values = new uint256[](0);
         bytes[] memory calldatas = new bytes[](0);
 
-
-        _execute(proposalId, targets, values, calldatas, keccak256(bytes(proposal.description)));
+        _execute(
+            proposalId,
+            targets,
+            values,
+            calldatas,
+            keccak256(bytes(proposal.description))
+        );
     }
 
     function votingDelay()
@@ -112,7 +127,9 @@ contract GovernorContract is
         return super.votingPeriod();
     }
 
-    function quorum(uint256 blockNumber)
+    function quorum(
+        uint256 blockNumber
+    )
         public
         view
         override(IGovernor, GovernorVotesQuorumFraction)
@@ -121,19 +138,16 @@ contract GovernorContract is
         return super.quorum(blockNumber);
     }
 
-    function getVotes(address account, uint256 blockNumber)
-        public
-        view
-        override(IGovernor, Governor)
-        returns (uint256)
-    {
+    function getVotes(
+        address account,
+        uint256 blockNumber
+    ) public view override(IGovernor, Governor) returns (uint256) {
         return super.getVotes(account, blockNumber);
     }
 
-
-   
-
-    function state(uint256 proposalId)
+    function state(
+        uint256 proposalId
+    )
         public
         view
         override(Governor, GovernorTimelockControl)
@@ -198,18 +212,16 @@ contract GovernorContract is
         return super._executor();
     }
 
-    function getProposalVotes(uint256 proposalId) external view returns (uint256 forVotes, uint256 againstVotes) {
+    function getProposalVotes(
+        uint256 proposalId
+    ) external view returns (uint256 forVotes, uint256 againstVotes) {
         Proposal storage proposal = proposals[proposalId];
         return (proposal.forVotes, proposal.againstVotes);
     }
 
-
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(Governor, GovernorTimelockControl)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(Governor, GovernorTimelockControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }
 }

@@ -140,9 +140,12 @@ contract LendingPool is ILendingPool {
     }
 
     function createGovernorProposal(
-        string memory description
+         string memory description,
+        address[] memory targets,
+        uint256[] memory values,
+        bytes[] memory calldatas
     ) external override {
-        governorContract.createProposal(description);
+        governorContract.createProposal(description, targets, values, calldatas);
     }
 
     function voteGovernorProposal(
