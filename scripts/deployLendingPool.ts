@@ -1,4 +1,6 @@
 import { ethers } from 'hardhat';
+import {LendingPool} from '../contracts/lending/LendingPool.sol'
+
 
 async function main() {
     const [deployer, player1, player2] = await ethers.getSigners();
@@ -45,11 +47,18 @@ async function main() {
 
 
 
-      // Deploy MockToken
+      // Deploy lendingContract
       const Lending = await ethers.getContractFactory('LendingPool');
-      const lendingContract = await Lending.deploy(mockToken.address);
+      const lendingContract = await Lending.deploy(governorContract.address);
       await lendingContract.deployed();
       console.log('MockToken deployed to:', lendingContract.address);
+
+
+      const lendingContracting = (await ethers.getContractAt(
+        "LendingPool",
+        lendingContract.address
+      )) as LendingPool;
+    
 
 
        
@@ -63,16 +72,26 @@ async function main() {
     };
 
 
-    const proposalId = await lendingContract.createGovernorProposal(description, {
-        gasLimit: 5000000  // Example gas limit, adjust as needed
-    });
+    const proposalId = await lendingContracting.createGovernorProposal(description);
 
     console.log(`Proposal created with ID: ${proposalId}`);
 
-    // await governorContract.connect(player1).vote(proposalId, true);
+    await lendingContract.connect(player1).voteGovernorProposal(1, true, {
+        gasLimit: 5000000  // Example gas limit, adjust as needed
+    });
 
     console.log('Proposal voted on by Player1.');
 
+
+    console.log(await governorContract.getProposal(0))
+
+    console.log(await governorContract.getProposal(1))
+    
+
+    const [forVotes, againstVotes] = await lendingContracting.connect(player1).getGovernorProposalVotes(1);
+
+    console.log('voting count for votes now?',forVotes)
+    console.log('voting count against votes now?',againstVotes)
     console.log('Deployment and proposal creation completed successfully.');
 }
 

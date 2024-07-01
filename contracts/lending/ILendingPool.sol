@@ -22,11 +22,12 @@ interface ILendingPool {
     function liquidate(address borrower, address asset, uint256 amount) external;
     function getReserveData(address asset) external view returns (Reserve memory);
     function getUserData(address user, address asset) external view returns (Loan memory);
+
     function createGovernorProposal(string memory description) external;
     function voteGovernorProposal(uint256 proposalId, bool support) external;
     function executeGovernorProposal(uint256 proposalId) external;
     function getGovernorProposal(uint256 proposalId) external view returns (GovernorContract.Proposal memory);
-
+    function getGovernorProposalVotes(uint256 proposalId) external view returns (uint256 forVotes, uint256 againstVotes);
 
 
 }

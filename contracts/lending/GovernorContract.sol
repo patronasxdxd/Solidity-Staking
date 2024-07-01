@@ -130,6 +130,9 @@ contract GovernorContract is
         return super.getVotes(account, blockNumber);
     }
 
+
+   
+
     function state(uint256 proposalId)
         public
         view
@@ -194,6 +197,12 @@ contract GovernorContract is
     {
         return super._executor();
     }
+
+    function getProposalVotes(uint256 proposalId) external view returns (uint256 forVotes, uint256 againstVotes) {
+        Proposal storage proposal = proposals[proposalId];
+        return (proposal.forVotes, proposal.againstVotes);
+    }
+
 
     function supportsInterface(bytes4 interfaceId)
         public

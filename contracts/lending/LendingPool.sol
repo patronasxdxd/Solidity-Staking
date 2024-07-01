@@ -156,6 +156,14 @@ contract LendingPool is ILendingPool {
         governorContract.executeProposal(proposalId);
     }
 
+
+
+    function getGovernorProposalVotes(uint256 proposalId) external override view  returns (uint256 forVotes, uint256 againstVotes) {
+        GovernorContract.Proposal memory proposal =  governorContract.getProposal(proposalId);
+        return (proposal.forVotes, proposal.againstVotes);
+    }
+
+
     function getGovernorProposal(
         uint256 proposalId
     ) external view override returns (GovernorContract.Proposal memory) {
