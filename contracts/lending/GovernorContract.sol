@@ -26,8 +26,16 @@ contract GovernorContract is
         bool executed;
     }
 
+    mapping(uint256 => uint256) public totalVotesForProposal;
     mapping(uint256 => Proposal) public proposals;
     uint256 public proposalCount;
+
+    // Function to get the total vote count for a proposal
+    function getTotalVotesForProposal(
+        uint256 proposalId
+    ) public view returns (uint256) {
+        return totalVotesForProposal[proposalId];
+    }
 
     constructor(
         IVotes _token,
@@ -55,27 +63,30 @@ contract GovernorContract is
         uint256[] memory values,
         bytes[] memory calldatas
     ) external {
+
+
         proposalCount++;
         uint256 proposalId = proposalCount;
+   
+        uint256 proposalUId = propose(targets, values, calldatas, description);
+
 
         proposals[proposalId] = Proposal({
-            proposalId: proposalId,
+            proposalId: proposalUId,
             description: description,
             proposer: msg.sender,
             forVotes: 0,
             againstVotes: 0,
             executed: false
         });
-
-
-        propose(targets, values, calldatas, description);
+    
     }
 
     function vote(uint256 proposalId, bool support) external {
-        require(
-            state(proposalId) == ProposalState.Active,
-            "Governor: voting is closed"
-        );
+        // require(
+        //     state(proposalId) == ProposalState.Active,
+        //     "Governor: voting is closed"
+        // );
         Proposal storage proposal = proposals[proposalId];
 
         uint256 weight = getVotes(msg.sender, block.number - 1);
@@ -156,16 +167,6 @@ contract GovernorContract is
         return super.state(proposalId);
     }
 
-    function castVoteWithReason(
-        uint256 proposalId,
-        uint8 support,
-        string calldata reason
-    ) public override(Governor, IGovernor) returns (uint256) {
-        address voter = _msgSender();
-
-        return super.castVoteWithReason(proposalId, support, reason);
-    }
-
     function propose(
         address[] memory targets,
         uint256[] memory values,
@@ -217,6 +218,32 @@ contract GovernorContract is
     ) external view returns (uint256 forVotes, uint256 againstVotes) {
         Proposal storage proposal = proposals[proposalId];
         return (proposal.forVotes, proposal.againstVotes);
+    }
+
+
+    function proposalExists(uint256 proposalId) public view returns (bool) {
+        return proposals[proposalId].proposalId == proposalId;
+    }
+
+    function castVoteWithReason(
+        uint256 proposalId,
+        uint8 support,
+        string calldata reason
+    ) public override(Governor,IGovernor) returns (uint256) {
+        require(support <= 2, "Governor: invalid vote type");
+        address voter = _msgSender();
+
+        // Check that the proposal exists
+        require(
+            proposalExists(proposalId),
+            "Governor: proposal does not exist"
+        );
+
+        // Update the total votes for the proposal
+        totalVotesForProposal[proposalId]++;
+
+        // Call the inherited implementation to cast the vote
+        super.castVoteWithReason(proposalId, support, reason);
     }
 
     function supportsInterface(

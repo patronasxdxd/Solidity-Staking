@@ -27,9 +27,7 @@ async function main() {
     await mockToken.connect(player1).mint(player1.address, ethers.utils.parseEther('1100'));
     await mockToken.connect(player2).mint(player2.address, ethers.utils.parseEther('1000'));
 
-    // Delegate voting power to the deployer (optional step if your contract supports delegation)
-    // Example: delegate voting power from player1 to deployer
-    await mockToken.connect(player1).delegate(player1.address);
+ 
 
     console.log('Voting power delegated.');
 
@@ -39,7 +37,7 @@ async function main() {
         mockToken.address,
         timelockInstance.address,
         4,    // Quorum percentage (50%)
-        120,   // Voting period (2 hours)
+        2000,   // Voting period (2 hours)
         1      // Voting delay (1 block)
     );
     await governorContract.deployed();
@@ -64,24 +62,9 @@ async function main() {
        
 
 
-  
-
-
-
-   // Fetch the current votes (tokens) held by deployer
-   const deployerVotes = await mockToken.getVotes(player1.address);
-   console.log(`Deployer voting power (tokens): ${deployerVotes}`);
-
-
-   const player1Votes = await mockToken.getVotes(player1.address);
-  console.log(`Player1 voting power (tokens): ${player1Votes}`);
-
-   const proposalThreshold = await governorContract.proposalThreshold();
-  if (player1Votes < proposalThreshold) {
-      throw new Error(`Player1's voting power (${player1Votes}) is below proposal threshold (${proposalThreshold}).`);
-  }
-
-
+     // Delegate voting power to the deployer (optional step if your contract supports delegation)
+    // Example: delegate voting power from player1 to deployer
+    await mockToken.connect(player1).delegate(lendingContract.address);
 
   
   const description = "Mint Tokens Proposal";
@@ -98,8 +81,8 @@ async function main() {
   const calldatas = [mintAction.callData];
   
   // Create the proposal
-  const proposalId = await governorContract.connect(player1).createProposal(description, targets, values, calldatas);
-console.log(`Proposal created with ID: ${proposalId}`);
+  const proposalId = await lendingContract.connect(player1).createGovernorProposal(description, targets, values, calldatas);
+  // console.log(`Proposal created with ID: ${proposalId}`);
 
     // const proposalId = await lendingContracting.connect(player1).createGovernorProposal(description);
 
@@ -107,7 +90,42 @@ console.log(`Proposal created with ID: ${proposalId}`);
 
     // console.log(`Proposal created with ID: ${proposalId}`);
 
-    // await lendingContract.connect(player1).voteGovernorProposal(1, true);
+
+    const proposal = await governorContract.getProposal(1);
+    const proposalIdx = proposal.proposalId.toString();
+    
+    console.log(`Proposal ID: ${proposal.proposalId}`);
+    console.log(`Description: ${proposal.description}`);
+    console.log(`Proposer: ${proposal.proposer}`);
+    console.log(`For Votes: ${proposal.forVotes.toString()}`);
+    console.log(`Against Votes: ${proposal.againstVotes.toString()}`);
+    console.log(`Executed: ${proposal.executed}`);
+    
+
+
+
+    // to go forward 1 block
+    await mockToken.connect(player1).approve(lendingContract.address, 10);
+    await lendingContract.connect(player1).deposit(mockToken.address, 10)
+    
+
+    console.log("swag state",await governorContract.state(proposal.proposalId))
+    console.log("swag state",await governorContract.state(proposal.proposalId))
+    console.log("swag state",await governorContract.state(proposal.proposalId))
+    console.log("swag state",await governorContract.state(proposal.proposalId))
+    console.log("swag state",await governorContract.state(proposal.proposalId))
+   
+
+
+      await lendingContract.connect(player1).voteGovernorProposal(proposal.proposalId, true);
+
+
+
+
+
+
+    // 0 = Against, 1 = For, 2 = Abstain for this example
+    await governorContract.castVoteWithReason(proposal.proposalId,1,"why not")
 
     // console.log('Proposal voted on by Player1.');
 
