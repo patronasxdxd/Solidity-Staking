@@ -17,6 +17,8 @@ async function main() {
   await timelockInstance.deployed();
   console.log('Timelock deployed to:', timelockInstance.address);
 
+
+
   // Deploy MockToken
   const MockToken = await ethers.getContractFactory('MockToken');
   const mockToken = await MockToken.deploy();
@@ -42,6 +44,16 @@ async function main() {
   );
   await governorContract.deployed();
   console.log('GovernorContract deployed to:', governorContract.address);
+
+
+
+  const proposerRole = await timelockInstance.PROPOSER_ROLE()
+  const executorRole = await timelockInstance.EXECUTOR_ROLE()
+
+  const proposerTx = await timelockInstance.grantRole(proposerRole, governorContract.address)
+  await proposerTx.wait(1)
+  const executorTx = await timelockInstance.grantRole(executorRole, governorContract.address)
+  await executorTx.wait(1)
 
 
 
