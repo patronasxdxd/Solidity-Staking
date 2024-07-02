@@ -114,9 +114,16 @@ async function main() {
       // await governorContract.connect(player1).vote(proposal.proposalId, true);
 
 
+      await mockToken.mockMineBlock()
+
       await mockToken.connect(player1).transfer(player3.address, ethers.utils.parseEther('100'));
 
       await mockToken.connect(player3).delegate(player3.address);
+
+      await mockToken.mockMineBlock()
+
+      const currentBlock = await ethers.provider.getBlockNumber();
+      console.log(`Current block number: ${currentBlock}`);
 
       await governorContract.connect(player3).vote(proposal.proposalId, false);
 
@@ -124,6 +131,12 @@ async function main() {
       //cant vote twice now
       // await lendingContract.connect(player1).voteGovernorProposal(proposal.proposalId, true);
 
+      
+
+      console.log("saw");
+
+      console.log(await governorContract.connect(player1).proposalSnapshot(proposal.proposalId))
+      console.log(await governorContract.connect(player1).proposalDeadline(proposal.proposalId))
 
 
       const [forVotes, againstVotes] = await governorContract.connect(player1).getProposalVotes(proposal.proposalId);

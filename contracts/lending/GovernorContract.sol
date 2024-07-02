@@ -26,7 +26,6 @@ contract GovernorContract is
         bool executed;
     }
 
-
     mapping(address => mapping(uint256 => bool)) public hasVoted;
 
     mapping(uint256 => uint256) public totalVotesForProposal;
@@ -66,13 +65,10 @@ contract GovernorContract is
         uint256[] memory values,
         bytes[] memory calldatas
     ) external {
-
-
         proposalCount++;
         uint256 proposalId = proposalCount;
-   
-        uint256 proposalUId = propose(targets, values, calldatas, description);
 
+        uint256 proposalUId = propose(targets, values, calldatas, description);
 
         proposals[proposalId] = Proposal({
             proposalId: proposalUId,
@@ -82,12 +78,10 @@ contract GovernorContract is
             againstVotes: 0,
             executed: false
         });
-    
     }
 
     function vote(uint256 proposalId, bool support) external {
-
-         address voter = msg.sender;
+        address voter = msg.sender;
         require(!hasVoted[voter][proposalId], "Already voted on this proposal");
 
         require(
@@ -97,10 +91,9 @@ contract GovernorContract is
 
         hasVoted[voter][proposalId] = true;
 
-
         Proposal storage proposal = proposals[proposalId];
-
-        uint256 weight = getVotes(msg.sender, block.number - 1);
+        // only get the voting power at the time the proposal started.
+        uint256 weight = getVotes(voter, proposalSnapshot(proposalId)); 
         if (support) {
             proposal.forVotes += weight;
         } else {
@@ -231,7 +224,6 @@ contract GovernorContract is
         return (proposal.forVotes, proposal.againstVotes);
     }
 
-
     function proposalExists(uint256 proposalId) public view returns (bool) {
         return proposals[proposalId].proposalId == proposalId;
     }
@@ -240,7 +232,7 @@ contract GovernorContract is
         uint256 proposalId,
         uint8 support,
         string calldata reason
-    ) public override(Governor,IGovernor) returns (uint256) {
+    ) public override(Governor, IGovernor) returns (uint256) {
         require(support <= 2, "Governor: invalid vote type");
         address voter = _msgSender();
 
@@ -261,5 +253,23 @@ contract GovernorContract is
         bytes4 interfaceId
     ) public view override(Governor, GovernorTimelockControl) returns (bool) {
         return super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev See {IGovernor-proposalSnapshot}.
+     */
+    function proposalSnapshot(
+        uint256 proposalId
+    ) public view virtual override(Governor, IGovernor) returns (uint256) {
+        return super.proposalSnapshot(proposalId);
+    }
+
+    /**
+     * @dev See {IGovernor-proposalDeadline}.
+     */
+    function proposalDeadline(
+        uint256 proposalId
+    ) public view virtual override(Governor, IGovernor) returns (uint256) {
+        return super.proposalDeadline(proposalId);
     }
 }
