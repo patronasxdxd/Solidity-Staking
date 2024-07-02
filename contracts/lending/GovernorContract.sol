@@ -100,6 +100,7 @@ contract GovernorContract is
             proposal.againstVotes += weight;
         }
 
+        super.castVote(proposalId, support ? 1 : 0);
         emit VoteCast(msg.sender, proposalId, support ? 1 : 0, weight, "");
     }
 
