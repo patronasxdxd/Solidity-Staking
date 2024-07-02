@@ -228,27 +228,6 @@ contract GovernorContract is
         return proposals[proposalId].proposalId == proposalId;
     }
 
-    function castVoteWithReason(
-        uint256 proposalId,
-        uint8 support,
-        string calldata reason
-    ) public override(Governor, IGovernor) returns (uint256) {
-        require(support <= 2, "Governor: invalid vote type");
-        address voter = _msgSender();
-
-        // Check that the proposal exists
-        require(
-            proposalExists(proposalId),
-            "Governor: proposal does not exist"
-        );
-
-        // Update the total votes for the proposal
-        totalVotesForProposal[proposalId]++;
-
-        // Call the inherited implementation to cast the vote
-        super.castVoteWithReason(proposalId, support, reason);
-    }
-
     function supportsInterface(
         bytes4 interfaceId
     ) public view override(Governor, GovernorTimelockControl) returns (bool) {
