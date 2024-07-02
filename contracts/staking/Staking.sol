@@ -119,9 +119,7 @@ contract Staking is Initializable {
 
         totalStaked = totalStaked.add(amount);
         Stake storage userStake = stakes[msg.sender];
-        userStake.stakes.push(
-            StakeInfo(userStake.stakes.length, amount)
-        ); 
+        userStake.stakes.push(StakeInfo(userStake.stakes.length, amount));
         userStake.totalStaked = userStake.totalStaked.add(amount);
 
         emit Staked(msg.sender, amount);
@@ -130,7 +128,6 @@ contract Staking is Initializable {
     /// @dev Allows user to unstake tokens after the correct time period has elapsed
     /// @param amount - the amount to unlock (in wei)
     function withdraw(uint256 amount) external noReentrant {
-        
         require(
             amount <= balances[msg.sender],
             "Not enough funds in stakingToken"
@@ -154,7 +151,7 @@ contract Staking is Initializable {
         // Update user's balance
         balances[msg.sender] = balances[msg.sender].sub(amount);
 
-        uint256 ethReceived = amount; // Adjust this based on conversion rate
+        uint256 ethReceived = amount;
 
         payable(msg.sender).transfer(ethReceived);
 
@@ -193,13 +190,10 @@ contract Staking is Initializable {
 
     /// @dev Allows user to withdraw staked tokens in case of an emergency
     function emergencyWithdrawAll() external noReentrant {
-
         updateReward(msg.sender);
         uint256 amount = stakes[msg.sender].totalStaked;
 
-
-
-       require(
+        require(
             amount <= balances[msg.sender],
             "Not enough funds in stakingToken"
         );
@@ -209,13 +203,11 @@ contract Staking is Initializable {
             "Insufficient staking tokens"
         );
 
-
-        console.log(amount);   
+        console.log(amount);
         console.log(earlyWithdrawalPenalty);
 
         uint256 penalty = amount.mul(earlyWithdrawalPenalty).div(100);
         uint256 amountAfterPenalty = amount.sub(penalty);
-
 
         stakingToken.burnFrom(msg.sender, amount);
         balances[msg.sender] = balances[msg.sender].sub(amount);
@@ -226,12 +218,11 @@ contract Staking is Initializable {
         if (penalty > 0) {
             payable(address(this)).transfer(penalty);
             balances[address(this)] = balances[address(this)].add(penalty);
-         }
+        }
 
         delete stakes[msg.sender];
         emit EmergencyWithdraw(msg.sender, amount);
     }
-
 
     /// @dev Returns the balance of staking tokens held by an account.
     /// @param account The account address to check balance for.
@@ -366,16 +357,20 @@ contract Staking is Initializable {
     }
 
     function adjustStakeAmounts() public onlyOwner {
-    uint256 currentETHPrice = getLatestETHPrice();
-        if (currentETHPrice < 2000 * 1e8) { 
-            minStakeAmount = 0.25 * 10 ** 18; 
-            maxStakeAmount = 500 * 10 ** 18;  
+        uint256 currentETHPrice = getLatestETHPrice();
+        if (currentETHPrice < 2000 * 1e8) {
+            minStakeAmount = 0.25 * 10 ** 18;
+            maxStakeAmount = 500 * 10 ** 18;
         } else {
-            minStakeAmount = 0.5 * 10 ** 18;  
-            maxStakeAmount = 1000 * 10 ** 18; 
+            minStakeAmount = 0.5 * 10 ** 18;
+            maxStakeAmount = 1000 * 10 ** 18;
         }
-}
+    }
 
+    function getTotalStakedForUser(address account) external view returns (uint256) {
+        Stake storage userStake = stakes[account];
+        return userStake.totalStaked;
+    }
 
     receive() external payable {}
 }
