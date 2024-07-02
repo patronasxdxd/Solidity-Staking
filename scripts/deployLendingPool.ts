@@ -1,5 +1,6 @@
 import { ethers } from 'hardhat';
 import { LendingPool } from '../contracts/lending/LendingPool.sol'
+import { network } from "hardhat"
 
 
 async function main() {
@@ -13,7 +14,7 @@ async function main() {
 
   // Deploy TimelockController
   const timelock = await ethers.getContractFactory("TimeLock");
-  const timelockInstance = await timelock.deploy(86400, [], [], deployer.address); // 1 day timelock
+  const timelockInstance = await timelock.deploy(0, [], [], deployer.address); // 1 day timelock
   await timelockInstance.deployed();
   console.log('Timelock deployed to:', timelockInstance.address);
 
@@ -54,6 +55,11 @@ async function main() {
   await proposerTx.wait(1)
   const executorTx = await timelockInstance.grantRole(executorRole, governorContract.address)
   await executorTx.wait(1)
+
+  const proposerTx2 = await timelockInstance.grantRole(proposerRole, player1.address)
+  await proposerTx2.wait(1)
+  const executorTx2 = await timelockInstance.grantRole(executorRole, player1.address)
+  await executorTx2.wait(1)
 
 
 
@@ -126,6 +132,9 @@ async function main() {
   // await governorContract.connect(player1).vote(proposal.proposalId, true);
 
 
+  
+
+
   await mockToken.mockMineBlock()
 
   // await mockToken.connect(player1).transfer(player3.address, ethers.utils.parseEther('100'));
@@ -168,19 +177,45 @@ async function main() {
   await mockToken.mockMineBlock()
   await mockToken.mockMineBlock()
   await mockToken.mockMineBlock()
+  await mockToken.mockMineBlock()
+
+  await mockToken.mockMineBlock()
+  console.log(await governorContract.state(proposal.proposalId))
 
 
-  await governorContract.connect(player1).executeProposal(proposal.proposalId);
+
+
+
+  //QUE OPERATION
+  const descriptionHash = ethers.utils.id(description);
+  await governorContract.queue(targets, values, calldatas, descriptionHash);
+
+
+
+  // await ethers.provider.send("evm_increaseTime", [300]);
+  // await ethers.provider.send("evm_mine", []);
+
+  await governorContract.executeProposal(proposal.proposalId);
 
 
   console.log(await governorContract.state(proposal.proposalId))
 
 
 
+
   console.log('voting count for votes now?', forVotes)
   console.log('voting count against votes now?', againstVotes)
   console.log('Deployment and proposal creation completed successfully.');
-  // console.log('Deployment and proposal creation completed successfully.');
+  console.log('Deployment and proposal creation completed successfully.');
+
+
+
+  console.log( await timelockInstance.getCurrentBlockTimestamp())
+  console.log( await timelockInstance.getOperationTimestamp())
+  console.log( await timelockInstance.getID())
+
+  console.log( await timelockInstance.getDoneTimestamp())
+
 }
 
 main()

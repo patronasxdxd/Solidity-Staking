@@ -106,7 +106,7 @@ contract GovernorContract is
 
     function executeProposal(uint256 proposalId) external {
         require(
-            state(proposalId) == ProposalState.Succeeded,
+            state(proposalId) == ProposalState.Queued,
             "Governor: proposal not succeeded"
         );
         Proposal storage proposal = proposals[proposalId];
