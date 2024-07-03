@@ -4,7 +4,16 @@
 
 ## setup 
 
-### open terminal & type:
+### Installation
+
+```
+git clone https://github.com/patronasxdxd/Solidity-Staking.git
+cd Solidity-Staking
+yarn install
+```
+
+### Local Testnet Setup
+To set up a local testnet using Anvil, open a terminal and run:
 
 `anvil`
 
@@ -28,7 +37,8 @@ Available Accounts
 (1) "0x70997970C51812dc3A010C7d01b50e0d17dc79C8" (10000 ETH)
 ```
 
-### open vscode and type:
+### Deploying Lending Pool
+To deploy the lending pool to the Anvil testnet, open VSCode and run:
 
 `yarn hardhat run scripts/deployLendingPool --network localhost`
 
@@ -94,7 +104,9 @@ Executed: true
 
 ## setup 
 
-### open terminal & type:
+### Running Staking Tests
+
+To run tests for the staking contract, execute:
 
 `npx hardhat test ./test/staking/staking.challenge.js `
 
