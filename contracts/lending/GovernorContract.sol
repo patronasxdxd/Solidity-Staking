@@ -24,6 +24,9 @@ contract GovernorContract is
         uint256 forVotes;
         uint256 againstVotes;
         bool executed;
+        address[] targets;
+        uint256[] values;
+        bytes[] calldatas;
     }
 
     mapping(address => mapping(uint256 => bool)) public hasVoted;
@@ -76,7 +79,10 @@ contract GovernorContract is
             proposer: msg.sender,
             forVotes: 0,
             againstVotes: 0,
-            executed: false
+            executed: false,
+            targets: targets,
+            values: values,
+            calldatas: calldatas
         });
     }
 
@@ -112,15 +118,11 @@ contract GovernorContract is
         Proposal storage proposal = proposals[proposalId];
         proposal.executed = true;
 
-        address[] memory targets = new address[](0);
-        uint256[] memory values = new uint256[](0);
-        bytes[] memory calldatas = new bytes[](0);
-
         _execute(
             proposalId,
-            targets,
-            values,
-            calldatas,
+            proposal.targets,
+            proposal.values,
+            proposal.calldatas,
             keccak256(bytes(proposal.description))
         );
     }

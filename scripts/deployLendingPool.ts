@@ -90,7 +90,7 @@ async function main() {
   // Example: minting tokens as an action
   const mintAction = {
     target: mockToken.address,
-    callData: mockToken.interface.encodeFunctionData('mint', [player1.address, ethers.utils.parseEther('1')])
+    callData: mockToken.interface.encodeFunctionData('mint', [player1.address, ethers.utils.parseEther('123')])
   };
 
   // Ensure targets, values, and calldatas are correctly populated
@@ -194,6 +194,9 @@ async function main() {
 
   // await ethers.provider.send("evm_increaseTime", [300]);
   // await ethers.provider.send("evm_mine", []);
+// Check balance of player1
+let balancePlayer1 = await mockToken.balanceOf(player1.address);
+console.log(`Balance of player1: ${ethers.utils.formatEther(balancePlayer1)} tokens`);
 
   await governorContract.executeProposal(proposal.proposalId);
 
@@ -206,7 +209,6 @@ async function main() {
   console.log('voting count for votes now?', forVotes)
   console.log('voting count against votes now?', againstVotes)
   console.log('Deployment and proposal creation completed successfully.');
-  console.log('Deployment and proposal creation completed successfully.');
 
 
 
@@ -215,6 +217,12 @@ async function main() {
   console.log( await timelockInstance.getID())
 
   console.log( await timelockInstance.getDoneTimestamp())
+
+
+  // Check balance of player1
+balancePlayer1 = await mockToken.balanceOf(player1.address);
+console.log(`Balance of player1: ${ethers.utils.formatEther(balancePlayer1)} tokens`);
+
 
 }
 
