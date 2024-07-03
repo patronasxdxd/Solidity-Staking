@@ -96,7 +96,8 @@ async function main() {
   console.log('');
   console.log('--------------- Stage 5: Voting on Proposal ---------------');
   await mockToken.mockMineBlock();
-  await governorContract.connect(player1).vote(proposal.proposalId, true);
+  await governorContract.connect(player1).vote(1, true);
+
   await mockToken.mockMineBlock();
 
   proposal = await governorContract.getProposal(1);
