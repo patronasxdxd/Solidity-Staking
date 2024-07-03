@@ -198,10 +198,12 @@ async function main() {
 let balancePlayer1 = await mockToken.balanceOf(player1.address);
 console.log(`Balance of player1: ${ethers.utils.formatEther(balancePlayer1)} tokens`);
 
-  await governorContract.executeProposal(proposal.proposalId);
 
+console.log(await governorContract.state(proposal.proposalId))
 
-  console.log(await governorContract.state(proposal.proposalId))
+await governorContract.executeProposal(1);
+
+console.log(await governorContract.state(proposal.proposalId))
 
 
 
@@ -222,6 +224,22 @@ console.log(`Balance of player1: ${ethers.utils.formatEther(balancePlayer1)} tok
   // Check balance of player1
 balancePlayer1 = await mockToken.balanceOf(player1.address);
 console.log(`Balance of player1: ${ethers.utils.formatEther(balancePlayer1)} tokens`);
+
+await mockToken.mockMineBlock()
+console.log(await governorContract.state(proposal.proposalId))
+
+
+
+let proposal2 = await governorContract.getProposal(1);
+let proposalIdx2 = proposal2.proposalId.toString();
+
+console.log(`Proposal ID: ${proposal2.proposalId}`);
+console.log(`Description: ${proposal2.description}`);
+console.log(`Proposer: ${proposal2.proposer}`);
+console.log(`For Votes: ${proposal2.forVotes.toString()}`);
+console.log(`Against Votes: ${proposal2.againstVotes.toString()}`);
+console.log(`Executed: ${proposal2.executed}`);
+
 
 
 }
