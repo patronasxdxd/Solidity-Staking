@@ -88,23 +88,23 @@ contract GovernorContract is
 
     function vote(uint256 proposalId, bool support) external {
         address voter = msg.sender;
-    
+
         Proposal storage proposal = proposals[proposalId];
 
-
-        require(!hasVoted[voter][proposal.proposalId], "Already voted on this proposal");
-
+        require(
+            !hasVoted[voter][proposal.proposalId],
+            "Already voted on this proposal"
+        );
 
         require(
             state(proposal.proposalId) == ProposalState.Active,
             "Governor: voting is closed"
         );
 
-
         hasVoted[voter][proposal.proposalId] = true;
 
         // only get the voting power at the time the proposal started.
-        uint256 weight = getVotes(voter, proposalSnapshot(proposal.proposalId)); 
+        uint256 weight = getVotes(voter, proposalSnapshot(proposal.proposalId));
         if (support) {
             proposal.forVotes += weight;
         } else {
@@ -116,10 +116,7 @@ contract GovernorContract is
     }
 
     function executeProposal(uint256 proposalId) external {
-       
         Proposal storage proposal = proposals[proposalId];
-        
-
 
         require(
             state(proposal.proposalId) == ProposalState.Queued,

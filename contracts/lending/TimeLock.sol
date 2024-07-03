@@ -16,23 +16,10 @@ contract TimeLock is TimelockController {
 
     }
 
-
      // Getter function for current block timestamp
     function getCurrentBlockTimestamp() public view returns (uint256) {
         return block.timestamp;
     }
-
-    // Getter function for the timestamp of an operation
-    function getOperationTimestamp() public view returns (uint256) {
-        return getTemp();
-    }
-    
-
-       // Getter function for the timestamp of an operation
-    function getID() public view returns (bytes32) {
-        return getTempId();
-    }
-    
     
     // Getter function for _DONE_TIMESTAMP
     function getDoneTimestamp() public pure returns (uint256) {

@@ -143,11 +143,6 @@ async function main() {
   console.log('Voting count against votes now:', againstVotes);
   console.log('Deployment and proposal creation completed successfully.');
 
-  console.log(await timelockInstance.getCurrentBlockTimestamp());
-  console.log(await timelockInstance.getOperationTimestamp());
-  console.log(await timelockInstance.getID());
-  console.log(await timelockInstance.getDoneTimestamp());
-
   balancePlayer1 = await mockToken.balanceOf(player1.address);
   console.log(`Balance of player1: ${ethers.utils.formatEther(balancePlayer1)} tokens`);
 
